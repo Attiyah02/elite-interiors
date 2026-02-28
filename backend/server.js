@@ -5,8 +5,15 @@ require('dotenv').config();
 
 const app = express();
 
-// Middleware
-app.use(cors());
+// Middleware - CORS configured for production
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'https://elite-interiors-phi.vercel.app',
+    'https://elite-interiors-phi-git-main.vercel.app'
+  ],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -28,7 +35,7 @@ app.get('/api/test-email', async (req, res) => {
     // Create a test order
     const testOrder = {
       _id: '507f1f77bcf86cd799439011',
-      totalAmount: 2500,
+      total: 2500,
       paymentMethod: 'card',
       createdAt: new Date(),
       items: [
