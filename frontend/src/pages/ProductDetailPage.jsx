@@ -50,10 +50,8 @@ const ProductDetailPage = () => {
     setTimeout(() => setAdded(false), 1800);
   };
 
-  // When color is clicked, update both the color and the image
   const handleColorSelect = (index) => {
     setSelectedColorIndex(index);
-    // If we have an image for this color, switch to it
     if (product.images?.[index]) {
       setSelectedImageIndex(index);
     }
@@ -73,19 +71,80 @@ const ProductDetailPage = () => {
   const images = product.images || [];
 
   return (
-    <div style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 32px' }}>
+    <div style={{ maxWidth: 1280, margin: '0 auto', padding: 'clamp(24px, 5vw, 48px) clamp(16px, 4vw, 32px)' }}>
+      
+      <style>{`
+        @media (min-width: 769px) {
+          .product-detail-grid {
+            grid-template-columns: 1fr 1fr !important;
+          }
+          
+          .specs-grid {
+            grid-template-columns: 1fr 1fr !important;
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .product-detail-grid {
+            grid-template-columns: 1fr !important;
+            gap: 32px !important;
+          }
+          
+          .thumbnail-gallery {
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 8px !important;
+          }
+          
+          .thumbnail-gallery button {
+            width: 100% !important;
+            height: auto !important;
+            aspect-ratio: 1 !important;
+          }
+          
+          .specs-grid {
+            grid-template-columns: 1fr !important;
+          }
+          
+          .color-buttons {
+            flex-wrap: wrap !important;
+          }
+          
+          .quantity-cart-row {
+            flex-direction: column !important;
+          }
+          
+          .quantity-cart-row > div,
+          .quantity-cart-row > button {
+            width: 100% !important;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .thumbnail-gallery {
+            grid-template-columns: repeat(3, 1fr) !important;
+          }
+        }
+      `}</style>
 
       {/* Back Button */}
       <button
         onClick={() => navigate(-1)}
         className="btn-outline"
-        style={{ marginBottom: 32, padding: '10px 20px', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+        style={{ 
+          marginBottom: 32, 
+          padding: '10px 20px', 
+          display: 'inline-flex', 
+          alignItems: 'center', 
+          gap: 8,
+          fontSize: 'clamp(0.8rem, 2vw, 0.9rem)'
+        }}
       >
         <ArrowLeft size={16} />
         Back
       </button>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, marginBottom: 80 }}>
+      <div className="product-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 64, marginBottom: 'clamp(40px, 8vw, 80px)' }}>
 
         {/* Images Gallery */}
         <div>
@@ -107,17 +166,19 @@ const ProductDetailPage = () => {
                 width: '100%', 
                 height: '100%', 
                 objectFit: 'contain',
-                padding: '24px'
+                padding: 'clamp(16px, 3vw, 24px)'
               }}
             />
             
             {/* Color indicator badge */}
             {colors[selectedColorIndex] && (
               <div style={{
-                position: 'absolute', top: 16, left: 16,
+                position: 'absolute', 
+                top: 'clamp(8px, 2vw, 16px)', 
+                left: 'clamp(8px, 2vw, 16px)',
                 background: 'rgba(255,255,255,0.95)',
                 padding: '8px 14px',
-                fontSize: '0.7rem',
+                fontSize: 'clamp(0.65rem, 1.5vw, 0.7rem)',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 fontFamily: 'Jost, sans-serif',
@@ -131,13 +192,14 @@ const ProductDetailPage = () => {
 
           {/* Thumbnail Gallery */}
           {images.length > 1 && (
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div className="thumbnail-gallery" style={{ display: 'flex', gap: 12 }}>
               {images.map((img, i) => (
                 <button
                   key={i}
                   onClick={() => setSelectedImageIndex(i)}
                   style={{
-                    width: 80, height: 80,
+                    width: 80, 
+                    height: 80,
                     border: selectedImageIndex === i ? '2px solid var(--charcoal)' : '1px solid var(--stone-200)',
                     background: 'var(--stone-100)',
                     cursor: 'pointer',
@@ -167,32 +229,38 @@ const ProductDetailPage = () => {
         {/* Product Info */}
         <div>
           <span style={{ 
-            fontSize: '0.65rem', letterSpacing: '0.15em', 
-            textTransform: 'uppercase', color: 'var(--accent)',
-            fontFamily: 'Jost, sans-serif', fontWeight: 500
+            fontSize: 'clamp(0.6rem, 1.5vw, 0.65rem)', 
+            letterSpacing: '0.15em', 
+            textTransform: 'uppercase', 
+            color: 'var(--accent)',
+            fontFamily: 'Jost, sans-serif', 
+            fontWeight: 500
           }}>
             {product.category} › {product.subcategory}
           </span>
 
           <h1 className="font-display" style={{ 
-            fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', 
-            fontWeight: 400, color: 'var(--charcoal)',
-            marginTop: 8, marginBottom: 16, lineHeight: 1.2
+            fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', 
+            fontWeight: 400, 
+            color: 'var(--charcoal)',
+            marginTop: 8, 
+            marginBottom: 16, 
+            lineHeight: 1.2
           }}>
             {product.name}
           </h1>
 
           {/* Price */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 24 }}>
-            <span className="font-display" style={{ fontSize: '2.5rem', fontWeight: 500, color: 'var(--charcoal)' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
+            <span className="font-display" style={{ fontSize: 'clamp(1.8rem, 5vw, 2.5rem)', fontWeight: 500, color: 'var(--charcoal)' }}>
               R {discountedPrice.toLocaleString()}
             </span>
             {product.discount > 0 && (
               <>
-                <span style={{ fontSize: '1.2rem', color: 'var(--stone-400)', textDecoration: 'line-through' }}>
+                <span style={{ fontSize: 'clamp(0.9rem, 2.5vw, 1.2rem)', color: 'var(--stone-400)', textDecoration: 'line-through' }}>
                   R {product.price.toLocaleString()}
                 </span>
-                <span className="badge badge-red">
+                <span className="badge badge-red" style={{ fontSize: 'clamp(0.65rem, 1.5vw, 0.75rem)' }}>
                   −{product.discount}%
                 </span>
               </>
@@ -200,9 +268,12 @@ const ProductDetailPage = () => {
           </div>
 
           <p style={{ 
-            fontSize: '0.95rem', color: 'var(--stone-600)', 
-            lineHeight: 1.7, marginBottom: 32,
-            fontFamily: 'Jost, sans-serif', fontWeight: 300
+            fontSize: 'clamp(0.85rem, 2vw, 0.95rem)', 
+            color: 'var(--stone-600)', 
+            lineHeight: 1.7, 
+            marginBottom: 32,
+            fontFamily: 'Jost, sans-serif', 
+            fontWeight: 300
           }}>
             {product.description}
           </p>
@@ -210,10 +281,10 @@ const ProductDetailPage = () => {
           {/* Color Selection */}
           {colors.length > 0 && (
             <div style={{ marginBottom: 32, paddingBottom: 32, borderBottom: '1px solid var(--stone-100)' }}>
-              <label className="field-label" style={{ marginBottom: 16 }}>
+              <label className="field-label" style={{ marginBottom: 16, fontSize: 'clamp(0.75rem, 2vw, 0.85rem)' }}>
                 Color: {colors[selectedColorIndex]}
               </label>
-              <div style={{ display: 'flex', gap: 12 }}>
+              <div className="color-buttons" style={{ display: 'flex', gap: 12 }}>
                 {colors.map((color, i) => {
                   const isSelected = selectedColorIndex === i;
                   return (
@@ -221,12 +292,12 @@ const ProductDetailPage = () => {
                       key={i}
                       onClick={() => handleColorSelect(i)}
                       style={{
-                        padding: '10px 20px',
+                        padding: 'clamp(8px, 2vw, 10px) clamp(14px, 3vw, 20px)',
                         border: isSelected ? '2px solid var(--charcoal)' : '1px solid var(--stone-200)',
                         background: isSelected ? 'var(--charcoal)' : 'white',
                         color: isSelected ? 'white' : 'var(--charcoal)',
                         cursor: 'pointer',
-                        fontSize: '0.8rem',
+                        fontSize: 'clamp(0.7rem, 1.8vw, 0.8rem)',
                         letterSpacing: '0.05em',
                         fontFamily: 'Jost, sans-serif',
                         fontWeight: isSelected ? 500 : 400,
@@ -243,23 +314,27 @@ const ProductDetailPage = () => {
           )}
 
           {/* Specifications */}
-          <div style={{ background: 'var(--stone-100)', padding: 24, marginBottom: 32 }}>
+          <div style={{ background: 'var(--stone-100)', padding: 'clamp(16px, 3vw, 24px)', marginBottom: 32 }}>
             <h3 style={{ 
-              fontSize: '0.7rem', letterSpacing: '0.15em', 
-              textTransform: 'uppercase', color: 'var(--stone-600)',
-              marginBottom: 16, fontFamily: 'Jost, sans-serif', fontWeight: 500
+              fontSize: 'clamp(0.65rem, 1.5vw, 0.7rem)', 
+              letterSpacing: '0.15em', 
+              textTransform: 'uppercase', 
+              color: 'var(--stone-600)',
+              marginBottom: 16, 
+              fontFamily: 'Jost, sans-serif', 
+              fontWeight: 500
             }}>
               Specifications
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="specs-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
               {product.specifications?.dimensions && (
                 <div style={{ display: 'flex', gap: 10 }}>
                   <Ruler size={16} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
                   <div>
-                    <p style={{ fontSize: '0.7rem', color: 'var(--stone-500)', fontFamily: 'Jost, sans-serif' }}>
+                    <p style={{ fontSize: 'clamp(0.65rem, 1.5vw, 0.7rem)', color: 'var(--stone-500)', fontFamily: 'Jost, sans-serif' }}>
                       Dimensions
                     </p>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--charcoal)', fontFamily: 'Jost, sans-serif' }}>
+                    <p style={{ fontSize: 'clamp(0.75rem, 2vw, 0.85rem)', fontWeight: 500, color: 'var(--charcoal)', fontFamily: 'Jost, sans-serif' }}>
                       {product.specifications.dimensions.length} × {product.specifications.dimensions.width} × {product.specifications.dimensions.height} cm
                     </p>
                   </div>
@@ -269,10 +344,10 @@ const ProductDetailPage = () => {
                 <div style={{ display: 'flex', gap: 10 }}>
                   <Package size={16} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
                   <div>
-                    <p style={{ fontSize: '0.7rem', color: 'var(--stone-500)', fontFamily: 'Jost, sans-serif' }}>
+                    <p style={{ fontSize: 'clamp(0.65rem, 1.5vw, 0.7rem)', color: 'var(--stone-500)', fontFamily: 'Jost, sans-serif' }}>
                       Material
                     </p>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--charcoal)', fontFamily: 'Jost, sans-serif' }}>
+                    <p style={{ fontSize: 'clamp(0.75rem, 2vw, 0.85rem)', fontWeight: 500, color: 'var(--charcoal)', fontFamily: 'Jost, sans-serif' }}>
                       {product.specifications.material.primary}
                     </p>
                   </div>
@@ -282,10 +357,10 @@ const ProductDetailPage = () => {
                 <div style={{ display: 'flex', gap: 10 }}>
                   <Clock size={16} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />
                   <div>
-                    <p style={{ fontSize: '0.7rem', color: 'var(--stone-500)', fontFamily: 'Jost, sans-serif' }}>
+                    <p style={{ fontSize: 'clamp(0.65rem, 1.5vw, 0.7rem)', color: 'var(--stone-500)', fontFamily: 'Jost, sans-serif' }}>
                       Assembly Time
                     </p>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--charcoal)', fontFamily: 'Jost, sans-serif' }}>
+                    <p style={{ fontSize: 'clamp(0.75rem, 2vw, 0.85rem)', fontWeight: 500, color: 'var(--charcoal)', fontFamily: 'Jost, sans-serif' }}>
                       {product.specifications.assemblyTime}
                     </p>
                   </div>
@@ -295,10 +370,10 @@ const ProductDetailPage = () => {
                 <div style={{ display: 'flex', gap: 10 }}>
                   <span style={{ fontSize: 16, marginTop: 2 }}>🪑</span>
                   <div>
-                    <p style={{ fontSize: '0.7rem', color: 'var(--stone-500)', fontFamily: 'Jost, sans-serif' }}>
+                    <p style={{ fontSize: 'clamp(0.65rem, 1.5vw, 0.7rem)', color: 'var(--stone-500)', fontFamily: 'Jost, sans-serif' }}>
                       Seating
                     </p>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--charcoal)', fontFamily: 'Jost, sans-serif' }}>
+                    <p style={{ fontSize: 'clamp(0.75rem, 2vw, 0.85rem)', fontWeight: 500, color: 'var(--charcoal)', fontFamily: 'Jost, sans-serif' }}>
                       {product.specifications.seatingCapacity} people
                     </p>
                   </div>
@@ -308,34 +383,43 @@ const ProductDetailPage = () => {
           </div>
 
           {/* Quantity & Add to Cart */}
-          <div style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
+          <div className="quantity-cart-row" style={{ display: 'flex', gap: 16, marginBottom: 24 }}>
             <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--stone-200)' }}>
               <button
                 onClick={() => setQuantity(Math.max(1, quantity - 1))}
                 style={{ 
-                  background: 'none', border: 'none', 
-                  cursor: 'pointer', padding: '14px 18px',
-                  fontFamily: 'Jost, sans-serif', fontSize: '1rem',
+                  background: 'none', 
+                  border: 'none', 
+                  cursor: 'pointer', 
+                  padding: 'clamp(10px, 2.5vw, 14px) clamp(14px, 3vw, 18px)',
+                  fontFamily: 'Jost, sans-serif', 
+                  fontSize: 'clamp(0.9rem, 2vw, 1rem)',
                   color: 'var(--charcoal)'
                 }}
               >
                 −
               </button>
               <span style={{ 
-                padding: '14px 20px', fontFamily: 'Jost, sans-serif', 
-                fontSize: '0.9rem', fontWeight: 500,
+                padding: 'clamp(10px, 2.5vw, 14px) clamp(16px, 3.5vw, 20px)', 
+                fontFamily: 'Jost, sans-serif', 
+                fontSize: 'clamp(0.85rem, 2vw, 0.9rem)', 
+                fontWeight: 500,
                 borderLeft: '1px solid var(--stone-200)',
                 borderRight: '1px solid var(--stone-200)',
-                minWidth: 60, textAlign: 'center'
+                minWidth: 50, 
+                textAlign: 'center'
               }}>
                 {quantity}
               </span>
               <button
                 onClick={() => setQuantity(quantity + 1)}
                 style={{ 
-                  background: 'none', border: 'none', 
-                  cursor: 'pointer', padding: '14px 18px',
-                  fontFamily: 'Jost, sans-serif', fontSize: '1rem',
+                  background: 'none', 
+                  border: 'none', 
+                  cursor: 'pointer', 
+                  padding: 'clamp(10px, 2.5vw, 14px) clamp(14px, 3vw, 18px)',
+                  fontFamily: 'Jost, sans-serif', 
+                  fontSize: 'clamp(0.9rem, 2vw, 1rem)',
                   color: 'var(--charcoal)'
                 }}
               >
@@ -346,7 +430,13 @@ const ProductDetailPage = () => {
             <button
               onClick={handleAddToCart}
               className={added ? 'btn-accent' : 'btn-primary'}
-              style={{ flex: 1, justifyContent: 'center', gap: 10 }}
+              style={{ 
+                flex: 1, 
+                justifyContent: 'center', 
+                gap: 10,
+                fontSize: 'clamp(0.8rem, 2vw, 0.9rem)',
+                padding: 'clamp(12px, 2.5vw, 16px) clamp(20px, 4vw, 32px)'
+              }}
             >
               <ShoppingCart size={18} />
               {added ? '✓ Added to Cart' : 'Add to Cart'}
@@ -357,7 +447,9 @@ const ProductDetailPage = () => {
           {product.specifications?.style?.length > 0 && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               {product.specifications.style.map(s => (
-                <span key={s} className="tag">{s}</span>
+                <span key={s} className="tag" style={{ fontSize: 'clamp(0.7rem, 1.8vw, 0.75rem)' }}>
+                  {s}
+                </span>
               ))}
             </div>
           )}
@@ -369,13 +461,18 @@ const ProductDetailPage = () => {
         <div>
           <div style={{ marginBottom: 40 }}>
             <h2 className="font-display" style={{ 
-              fontSize: 'clamp(1.8rem, 3vw, 2.2rem)', 
-              fontWeight: 400, color: 'var(--charcoal)' 
+              fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', 
+              fontWeight: 400, 
+              color: 'var(--charcoal)' 
             }}>
               Similar Pieces
             </h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 32 }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fill, minmax(clamp(200px, 40vw, 280px), 1fr))', 
+            gap: 'clamp(16px, 4vw, 32px)' 
+          }}>
             {similar.map((product, i) => (
               <ProductCard key={product._id} product={product} index={i} />
             ))}

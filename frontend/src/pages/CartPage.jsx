@@ -1,206 +1,465 @@
 import { useNavigate } from 'react-router-dom';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
-import { useAuth } from '../context/AuthContext';
+import { ShoppingBag, Trash2 } from 'lucide-react';
 
 const CartPage = () => {
-  const { cart, removeFromCart, updateQuantity, cartTotal, clearCart } = useCart();
-  const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
+  const { cart, removeFromCart, updateQuantity, clearCart } = useCart();
 
-  const handleCheckout = () => {
-    if (!isLoggedIn) {
-      navigate('/login');
-    } else {
-      navigate('/checkout');
-    }
-  };
+  const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const delivery = subtotal >= 2000 ? 0 : 150;
+  const total = subtotal + delivery;
 
   if (cart.length === 0) {
     return (
-      <div style={{ maxWidth: 600, margin: '0 auto', padding: '100px 32px', textAlign: 'center' }}>
-        <ShoppingBag size={64} style={{ color: 'var(--stone-300)', margin: '0 auto 24px' }} />
-        <h2 className="font-display" style={{ fontSize: '1.8rem', fontWeight: 400, color: 'var(--charcoal)', marginBottom: 8 }}>
-          Your cart is empty
+      <div style={{ 
+        minHeight: '70vh', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center',
+        padding: '48px 32px',
+        background: 'var(--warm-white)'
+      }}>
+        <ShoppingBag size={64} strokeWidth={1} style={{ color: 'var(--stone-300)', marginBottom: 24 }} />
+        <h2 className="font-display" style={{ fontSize: '1.8rem', fontWeight: 400, color: 'var(--charcoal)', marginBottom: 12 }}>
+          Your Cart is Empty
         </h2>
-        <p style={{ color: 'var(--stone-600)', marginBottom: 32, fontFamily: 'Jost, sans-serif' }}>
-          Discover pieces that speak to you
+        <p style={{ fontSize: '0.9rem', color: 'var(--stone-600)', marginBottom: 32, textAlign: 'center' }}>
+          Discover our curated collection of premium furniture
         </p>
         <button onClick={() => navigate('/products')} className="btn-primary">
-          Explore Collection
+          Browse Products
         </button>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 1280, margin: '0 auto', padding: '48px 32px' }}>
-      
-      {/* Header */}
-      <div style={{ marginBottom: 40 }}>
-        <span style={{ fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--accent)', fontFamily: 'Jost, sans-serif', fontWeight: 500 }}>
-          Shopping Cart
-        </span>
-        <h1 className="font-display" style={{ fontSize: 'clamp(2rem, 4vw, 2.5rem)', fontWeight: 400, color: 'var(--charcoal)', marginTop: 8 }}>
-          {cart.length} {cart.length === 1 ? 'Item' : 'Items'}
-        </h1>
-      </div>
+    <div style={{ minHeight: '80vh', background: 'var(--warm-white)', padding: 'clamp(32px, 5vw, 48px) 0' }}>
+      <div className="container">
+        <div style={{ marginBottom: 40 }}>
+          <span style={{ 
+            fontSize: '0.65rem', 
+            letterSpacing: '0.2em', 
+            textTransform: 'uppercase', 
+            color: 'var(--accent)', 
+            fontFamily: 'Jost, sans-serif', 
+            fontWeight: 500 
+          }}>
+            Shopping Cart
+          </span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
+            <h1 className="font-display" style={{ 
+              fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', 
+              fontWeight: 400, 
+              color: 'var(--charcoal)', 
+              marginTop: 8 
+            }}>
+              Your Cart ({cart.length} {cart.length === 1 ? 'item' : 'items'})
+            </h1>
+            <button 
+              onClick={clearCart}
+              style={{ 
+                background: 'none', 
+                border: '1px solid var(--stone-300)', 
+                padding: '8px 16px', 
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                color: 'var(--stone-600)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.borderColor = 'var(--accent)';
+                e.target.style.color = 'var(--accent)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.borderColor = 'var(--stone-300)';
+                e.target.style.color = 'var(--stone-600)';
+              }}
+            >
+              <Trash2 size={14} />
+              Clear Cart
+            </button>
+          </div>
+        </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: 48 }}>
+        <style>{`
+          @media (min-width: 769px) {
+            .cart-layout {
+              grid-template-columns: 1.5fr 1fr !important;
+            }
+          }
+          
+          @media (max-width: 640px) {
+            .cart-item {
+              grid-template-columns: 70px 1fr !important;
+              gap: 12px !important;
+            }
+            
+            .cart-item-actions {
+              grid-column: 1 / -1 !important;
+              display: flex !important;
+              justify-content: space-between !important;
+              align-items: center !important;
+              padding-top: 12px !important;
+              border-top: 1px solid var(--stone-100) !important;
+              margin-top: 8px !important;
+            }
+            
+            .quantity-controls {
+              gap: 8px !important;
+            }
+            
+            .quantity-btn {
+              width: 28px !important;
+              height: 28px !important;
+              font-size: 0.9rem !important;
+            }
+          }
 
-        {/* Cart Items */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          {cart.map(item => {
-            const itemPrice = item.price * (1 - (item.discount || 0) / 100);
-            return (
-              <article key={item._id} style={{ 
-                background: 'white', 
-                border: '1px solid var(--stone-200)', 
-                padding: 20,
-                display: 'flex', gap: 20
-              }}>
-                
-                {/* Image */}
-                <div style={{ 
-                  width: 120, 
-                  height: 120, 
-                  background: 'var(--stone-100)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}>
-                  <img
-                    src={item.images?.[0] || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200'}
+          @media (max-width: 480px) {
+            .cart-item {
+              grid-template-columns: 60px 1fr !important;
+            }
+          }
+        `}</style>
+
+        <div className="cart-layout" style={{ display: 'grid', gap: 32 }}>
+          {/* Cart Items */}
+          <div>
+            <div style={{ 
+              background: 'white', 
+              padding: 'clamp(20px, 4vw, 32px)', 
+              borderRadius: 2, 
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)' 
+            }}>
+              {cart.map((item, index) => (
+                <div 
+                  key={item._id} 
+                  className="cart-item"
+                  style={{ 
+                    display: 'grid',
+                    gridTemplateColumns: '100px 1fr auto',
+                    gap: 16,
+                    padding: '20px 0',
+                    borderBottom: index < cart.length - 1 ? '1px solid var(--stone-200)' : 'none'
+                  }}
+                >
+                  {/* Product Image */}
+                  <img 
+                    src={item.images?.[0] || 'https://via.placeholder.com/100'} 
                     alt={item.name}
                     style={{ 
                       width: '100%', 
-                      height: '100%', 
-                      objectFit: 'contain',
-                      padding: '8px'
+                      aspectRatio: '1', 
+                      objectFit: 'contain', 
+                      background: 'var(--stone-50)', 
+                      padding: 12,
+                      borderRadius: 2,
+                      cursor: 'pointer'
                     }}
+                    onClick={() => navigate(`/products/${item._id}`)}
                   />
-                </div>
-
-                {/* Details */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <span style={{ fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--stone-400)', fontFamily: 'Jost, sans-serif' }}>
-                      {item.category}
-                    </span>
-                    <h3 className="font-display" style={{ fontSize: '1.1rem', fontWeight: 400, color: 'var(--charcoal)', marginTop: 4, marginBottom: 4 }}>
+                  
+                  {/* Product Info */}
+                  <div style={{ minWidth: 0 }}>
+                    <h3 
+                      style={{ 
+                        fontSize: 'clamp(0.9rem, 2.5vw, 1.05rem)', 
+                        fontWeight: 500, 
+                        marginBottom: 8,
+                        color: 'var(--charcoal)',
+                        cursor: 'pointer',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical'
+                      }}
+                      onClick={() => navigate(`/products/${item._id}`)}
+                    >
                       {item.name}
                     </h3>
-                    {item.selectedColor && (
-                      <p style={{ fontSize: '0.75rem', color: 'var(--stone-500)', fontFamily: 'Jost, sans-serif' }}>
-                        Color: {item.selectedColor}
-                      </p>
-                    )}
+                    <p style={{ 
+                      fontSize: 'clamp(0.75rem, 2vw, 0.85rem)', 
+                      color: 'var(--stone-600)', 
+                      marginBottom: 8 
+                    }}>
+                      {item.category}
+                    </p>
+                    <p style={{ 
+                      fontSize: 'clamp(0.95rem, 2.5vw, 1.1rem)', 
+                      fontWeight: 600, 
+                      color: 'var(--accent)' 
+                    }}>
+                      R {item.price.toLocaleString()}
+                      {item.quantity > 1 && (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--stone-500)', fontWeight: 400, marginLeft: 8 }}>
+                          × {item.quantity}
+                        </span>
+                      )}
+                    </p>
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    
+                  {/* Actions */}
+                  <div className="cart-item-actions">
                     {/* Quantity Controls */}
-                    <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--stone-200)' }}>
-                      <button
+                    <div className="quantity-controls" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <button 
                         onClick={() => updateQuantity(item._id, item.quantity - 1)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px 14px', color: 'var(--charcoal)', fontFamily: 'Jost, sans-serif' }}
+                        className="quantity-btn"
+                        style={{ 
+                          width: 32, 
+                          height: 32, 
+                          border: '1px solid var(--stone-300)', 
+                          background: 'white', 
+                          cursor: 'pointer',
+                          fontSize: '1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: 2,
+                          transition: 'all 0.2s',
+                          color: 'var(--charcoal)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.borderColor = 'var(--accent)';
+                          e.target.style.background = 'var(--stone-50)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.borderColor = 'var(--stone-300)';
+                          e.target.style.background = 'white';
+                        }}
                       >
-                        <Minus size={14} />
+                        −
                       </button>
-                      <span style={{ padding: '8px 14px', fontFamily: 'Jost, sans-serif', fontSize: '0.85rem', fontWeight: 500, borderLeft: '1px solid var(--stone-200)', borderRight: '1px solid var(--stone-200)' }}>
+                      <span style={{ 
+                        fontSize: 'clamp(0.85rem, 2vw, 0.95rem)', 
+                        fontWeight: 500, 
+                        minWidth: 30, 
+                        textAlign: 'center',
+                        fontFamily: 'Jost, sans-serif'
+                      }}>
                         {item.quantity}
                       </span>
-                      <button
+                      <button 
                         onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '8px 14px', color: 'var(--charcoal)', fontFamily: 'Jost, sans-serif' }}
+                        className="quantity-btn"
+                        style={{ 
+                          width: 32, 
+                          height: 32, 
+                          border: '1px solid var(--stone-300)', 
+                          background: 'white', 
+                          cursor: 'pointer',
+                          fontSize: '1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderRadius: 2,
+                          transition: 'all 0.2s',
+                          color: 'var(--charcoal)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.target.style.borderColor = 'var(--accent)';
+                          e.target.style.background = 'var(--stone-50)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.target.style.borderColor = 'var(--stone-300)';
+                          e.target.style.background = 'white';
+                        }}
                       >
-                        <Plus size={14} />
+                        +
                       </button>
                     </div>
 
-                    {/* Price & Remove */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-                      <div style={{ textAlign: 'right' }}>
-                        <p className="font-display" style={{ fontSize: '1.1rem', fontWeight: 500, color: 'var(--charcoal)' }}>
-                          R {(itemPrice * item.quantity).toLocaleString()}
-                        </p>
-                        <p style={{ fontSize: '0.7rem', color: 'var(--stone-400)', fontFamily: 'Jost, sans-serif' }}>
-                          R {itemPrice.toLocaleString()} each
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => removeFromCart(item._id)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--stone-400)', transition: 'color 0.2s' }}
-                        onMouseEnter={(e) => e.target.style.color = '#c04040'}
-                        onMouseLeave={(e) => e.target.style.color = 'var(--stone-400)'}
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
+                    {/* Remove Button */}
+                    <button 
+                      onClick={() => removeFromCart(item._id)}
+                      style={{ 
+                        color: 'var(--stone-500)', 
+                        background: 'none', 
+                        border: 'none', 
+                        cursor: 'pointer',
+                        fontSize: 'clamp(0.75rem, 2vw, 0.85rem)',
+                        padding: '8px 12px',
+                        transition: 'color 0.2s',
+                        fontFamily: 'Jost, sans-serif',
+                        letterSpacing: '0.02em'
+                      }}
+                      onMouseEnter={(e) => e.target.style.color = '#d32f2f'}
+                      onMouseLeave={(e) => e.target.style.color = 'var(--stone-500)'}
+                    >
+                      Remove
+                    </button>
                   </div>
                 </div>
-              </article>
-            );
-          })}
-
-          <button
-            onClick={clearCart}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--stone-400)', fontFamily: 'Jost, sans-serif', alignSelf: 'flex-start', padding: 0, transition: 'color 0.2s' }}
-            onMouseEnter={(e) => e.target.style.color = '#c04040'}
-            onMouseLeave={(e) => e.target.style.color = 'var(--stone-400)'}
-          >
-            Clear Cart
-          </button>
-        </div>
-
-        {/* Order Summary */}
-        <div>
-          <div style={{ background: 'white', border: '1px solid var(--stone-200)', padding: 28, position: 'sticky', top: 100 }}>
-            
-            <h2 className="font-display" style={{ fontSize: '1.4rem', fontWeight: 400, color: 'var(--charcoal)', marginBottom: 24 }}>
-              Order Summary
-            </h2>
-
-            <div style={{ borderTop: '1px solid var(--stone-200)', borderBottom: '1px solid var(--stone-200)', padding: '20px 0', marginBottom: 20 }}>
-              {cart.map(item => {
-                const itemPrice = item.price * (1 - (item.discount || 0) / 100);
-                return (
-                  <div key={item._id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: '0.85rem', fontFamily: 'Jost, sans-serif' }}>
-                    <span style={{ color: 'var(--stone-600)' }}>
-                      {item.name.length > 25 ? item.name.substring(0, 25) + '...' : item.name} × {item.quantity}
-                    </span>
-                    <span style={{ fontWeight: 500, color: 'var(--charcoal)' }}>
-                      R {(itemPrice * item.quantity).toLocaleString()}
-                    </span>
-                  </div>
-                );
-              })}
+              ))}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 24 }}>
-              <span style={{ fontSize: '0.7rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--stone-600)', fontFamily: 'Jost, sans-serif', fontWeight: 500 }}>
-                Total
-              </span>
-              <span className="font-display" style={{ fontSize: '2rem', fontWeight: 500, color: 'var(--charcoal)' }}>
-                R {cartTotal.toLocaleString()}
-              </span>
-            </div>
-
-            {cartTotal >= 2000 && (
-              <div style={{ background: 'var(--stone-100)', padding: '12px 16px', marginBottom: 20, fontSize: '0.75rem', color: 'var(--stone-600)', fontFamily: 'Jost, sans-serif', textAlign: 'center' }}>
-                ✓ Qualifies for complimentary delivery
-              </div>
-            )}
-
-            <button onClick={handleCheckout} className="btn-primary" style={{ width: '100%', justifyContent: 'space-between', marginBottom: 12 }}>
-              {isLoggedIn ? 'Proceed to Checkout' : 'Sign In to Checkout'}
-              <ArrowRight size={16} />
-            </button>
-
-            <button onClick={() => navigate('/products')} className="btn-outline" style={{ width: '100%', justifyContent: 'center' }}>
+            {/* Continue Shopping Button - Mobile */}
+            <button 
+              onClick={() => navigate('/products')}
+              style={{ 
+                width: '100%',
+                marginTop: 16,
+                background: 'none', 
+                border: '1px solid var(--stone-300)', 
+                padding: '14px', 
+                cursor: 'pointer',
+                fontSize: '0.8rem',
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                color: 'var(--charcoal)',
+                transition: 'all 0.2s',
+                fontFamily: 'Jost, sans-serif'
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.borderColor = 'var(--accent)';
+                e.target.style.color = 'var(--accent)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.borderColor = 'var(--stone-300)';
+                e.target.style.color = 'var(--charcoal)';
+              }}
+            >
               Continue Shopping
             </button>
+          </div>
+
+          {/* Order Summary */}
+          <div>
+            <div style={{ 
+              background: 'white', 
+              padding: 'clamp(24px, 4vw, 32px)', 
+              borderRadius: 2, 
+              boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+              position: 'sticky',
+              top: 100
+            }}>
+              <h2 style={{ 
+                fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', 
+                fontWeight: 400, 
+                marginBottom: 24, 
+                color: 'var(--charcoal)',
+                fontFamily: 'Playfair Display, serif'
+              }}>
+                Order Summary
+              </h2>
+
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  marginBottom: 12,
+                  fontSize: 'clamp(0.85rem, 2vw, 0.9rem)'
+                }}>
+                  <span style={{ color: 'var(--stone-600)', fontFamily: 'Jost, sans-serif' }}>
+                    Subtotal ({cart.length} {cart.length === 1 ? 'item' : 'items'})
+                  </span>
+                  <span style={{ fontWeight: 500, fontFamily: 'Jost, sans-serif' }}>
+                    R {subtotal.toLocaleString()}
+                  </span>
+                </div>
+                
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  marginBottom: 12,
+                  fontSize: 'clamp(0.85rem, 2vw, 0.9rem)'
+                }}>
+                  <span style={{ color: 'var(--stone-600)', fontFamily: 'Jost, sans-serif' }}>
+                    Delivery
+                  </span>
+                  <span style={{ 
+                    fontWeight: 500, 
+                    color: delivery === 0 ? 'var(--accent)' : 'var(--charcoal)',
+                    fontFamily: 'Jost, sans-serif'
+                  }}>
+                    {delivery === 0 ? 'Free' : `R ${delivery}`}
+                  </span>
+                </div>
+
+                {subtotal >= 2000 && (
+                  <div style={{ 
+                    marginTop: 16, 
+                    padding: '12px 16px', 
+                    background: '#e8f5e9', 
+                    borderRadius: 4, 
+                    fontSize: 'clamp(0.75rem, 2vw, 0.85rem)', 
+                    color: '#2e7d32',
+                    fontFamily: 'Jost, sans-serif'
+                  }}>
+                    ✓ You qualify for free white glove delivery!
+                  </div>
+                )}
+
+                {subtotal < 2000 && (
+                  <div style={{ 
+                    marginTop: 16, 
+                    padding: '12px 16px', 
+                    background: 'var(--stone-50)', 
+                    borderRadius: 4, 
+                    fontSize: 'clamp(0.75rem, 2vw, 0.85rem)', 
+                    color: 'var(--stone-600)',
+                    fontFamily: 'Jost, sans-serif'
+                  }}>
+                    Add R {(2000 - subtotal).toLocaleString()} more for free delivery
+                  </div>
+                )}
+              </div>
+
+              <div style={{ 
+                paddingTop: 20, 
+                borderTop: '2px solid var(--stone-200)', 
+                marginBottom: 24 
+              }}>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center' 
+                }}>
+                  <span style={{ 
+                    fontSize: 'clamp(1rem, 2.5vw, 1.1rem)', 
+                    fontWeight: 500,
+                    fontFamily: 'Jost, sans-serif'
+                  }}>
+                    Total
+                  </span>
+                  <span style={{ 
+                    fontSize: 'clamp(1.3rem, 3vw, 1.5rem)', 
+                    fontWeight: 600, 
+                    color: 'var(--accent)',
+                    fontFamily: 'Playfair Display, serif'
+                  }}>
+                    R {total.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+
+              <button 
+                onClick={() => navigate('/checkout')}
+                className="btn-primary" 
+                style={{ width: '100%', marginBottom: 12 }}
+              >
+                Proceed to Checkout
+              </button>
+
+              <p style={{ 
+                fontSize: 'clamp(0.7rem, 1.8vw, 0.75rem)', 
+                color: 'var(--stone-500)', 
+                textAlign: 'center',
+                fontFamily: 'Jost, sans-serif',
+                lineHeight: 1.5
+              }}>
+                Secure checkout • Free returns • 2-year warranty
+              </p>
+            </div>
           </div>
         </div>
       </div>

@@ -1,255 +1,228 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, Banknote, Wallet, CheckCircle } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { ordersAPI } from '../utils/api';
 
 const CheckoutPage = () => {
-  const { cart, cartTotal, clearCart } = useCart();
   const navigate = useNavigate();
-  const [paymentMethod, setPaymentMethod] = useState('card');
+  const { cart, clearCart } = useCart();
+  const { user } = useAuth();
+
+  const [formData, setFormData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: '',
+    address: '',
+    city: '',
+    postalCode: '',
+    paymentMethod: 'card'
+  });
+
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
-  const paymentMethods = [
-    { id: 'card', label: 'Credit / Debit Card', icon: CreditCard, desc: 'Visa, Mastercard, Amex' },
-    { id: 'cash', label: 'Cash on Delivery', icon: Banknote, desc: 'Pay when delivered' },
-    { id: 'paypal', label: 'PayPal', icon: Wallet, desc: 'Secure payment via PayPal' },
-  ];
+  const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
-  const handlePlaceOrder = async () => {
+  useEffect(() => {
+    if (cart.length === 0) {
+      navigate('/cart');
+    }
+  }, [cart, navigate]);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setLoading(true);
     setError('');
+
     try {
-      const orderItems = cart.map(item => ({
-        productId: item._id,
-        quantity: item.quantity
-      }));
+      const orderData = {
+        items: cart.map(item => ({
+          productId: item._id,
+          quantity: item.quantity
+        })),
+        paymentMethod: formData.paymentMethod
+      };
 
-      await ordersAPI.create({
-        items: orderItems,
-        paymentMethod
-      });
-
+      await ordersAPI.create(orderData);
       clearCart();
-      setSuccess(true);
-
-      setTimeout(() => {
-        navigate('/orders');
-      }, 3000);
-
+      navigate('/order-success');
     } catch (err) {
-      setError(err.response?.data?.message || 'Order failed. Please try again.');
+      setError(err.response?.data?.message || 'Failed to place order');
     } finally {
       setLoading(false);
     }
   };
 
-  if (success) {
-    return (
-      <div style={{ minHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ textAlign: 'center' }} className="animate-fade-up">
-          <CheckCircle size={64} style={{ color: '#2d7a4f', margin: '0 auto 20px' }} />
-          <h2 className="font-display" style={{ fontSize: '2rem', fontWeight: 400, color: 'var(--charcoal)', marginBottom: 8 }}>
-            Order Confirmed
-          </h2>
-          <p style={{ fontSize: '0.9rem', color: 'var(--stone-600)', marginBottom: 4, fontFamily: 'Jost, sans-serif' }}>
-            Thank you for your purchase
-          </p>
-          <p style={{ fontSize: '0.75rem', color: 'var(--stone-400)', fontFamily: 'Jost, sans-serif' }}>
-            Redirecting to your orders...
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div style={{ maxWidth: 1080, margin: '0 auto', padding: '48px 32px' }}>
-      
-      {/* Header */}
-      <div style={{ marginBottom: 40 }}>
-        <span style={{ fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--accent)', fontFamily: 'Jost, sans-serif', fontWeight: 500 }}>
-          Checkout
-        </span>
-        <h1 className="font-display" style={{ fontSize: 'clamp(2rem, 4vw, 2.5rem)', fontWeight: 400, color: 'var(--charcoal)', marginTop: 8 }}>
-          Complete Your Order
-        </h1>
-      </div>
+    <div style={{ minHeight: '80vh', background: 'var(--warm-white)', padding: '48px 0' }}>
+      <div className="container">
+        <div style={{ marginBottom: 40 }}>
+          <span style={{ fontSize: '0.65rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--accent)', fontFamily: 'Jost, sans-serif', fontWeight: 500 }}>
+            Secure Checkout
+          </span>
+          <h1 className="font-display" style={{ fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', fontWeight: 400, color: 'var(--charcoal)', marginTop: 8 }}>
+            Complete Your Order
+          </h1>
+        </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.5fr) minmax(0, 1fr)', gap: 48 }}>
-
-        {/* Payment Method Selection */}
-        <div>
-          <h2 className="font-display" style={{ fontSize: '1.4rem', fontWeight: 400, color: 'var(--charcoal)', marginBottom: 24 }}>
-            Payment Method
-          </h2>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {paymentMethods.map(method => {
-              const Icon = method.icon;
-              const isSelected = paymentMethod === method.id;
-              return (
-                <label
-                  key={method.id}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 16,
-                    padding: 20, background: 'white',
-                    border: `1px solid ${isSelected ? 'var(--charcoal)' : 'var(--stone-200)'}`,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) e.currentTarget.style.borderColor = 'var(--stone-400)';
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) e.currentTarget.style.borderColor = 'var(--stone-200)';
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="payment"
-                    value={method.id}
-                    checked={isSelected}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    style={{ display: 'none' }}
-                  />
-                  <div style={{ 
-                    width: 48, height: 48, 
-                    background: isSelected ? 'var(--charcoal)' : 'var(--stone-100)',
-                    color: isSelected ? 'white' : 'var(--stone-600)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    transition: 'all 0.2s'
-                  }}>
-                    <Icon size={20} />
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontFamily: 'Jost, sans-serif', fontSize: '0.9rem', fontWeight: 500, color: 'var(--charcoal)', marginBottom: 2 }}>
-                      {method.label}
-                    </p>
-                    <p style={{ fontFamily: 'Jost, sans-serif', fontSize: '0.75rem', color: 'var(--stone-600)' }}>
-                      {method.desc}
-                    </p>
-                  </div>
-                  {isSelected && (
-                    <CheckCircle size={20} style={{ color: 'var(--charcoal)' }} />
-                  )}
-                </label>
-              );
-            })}
+        {error && (
+          <div style={{ background: '#fdf0f0', border: '1px solid #f5c0c0', padding: '12px 16px', marginBottom: 24, fontSize: '0.85rem', color: '#8a2020' }}>
+            {error}
           </div>
+        )}
 
-          {/* Simulated Card Details */}
-          {paymentMethod === 'card' && (
-            <div style={{ marginTop: 24, background: 'var(--stone-100)', padding: 24, border: '1px solid var(--stone-200)' }}>
-              <p style={{ fontSize: '0.7rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--stone-600)', marginBottom: 16, fontFamily: 'Jost, sans-serif', fontWeight: 500 }}>
-                Card Details (Simulation)
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <input
-                  type="text"
-                  placeholder="Card Number: 4242 4242 4242 4242"
-                  className="box-input"
-                />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <input
-                    type="text"
-                    placeholder="MM/YY: 12/28"
-                    className="box-input"
-                  />
-                  <input
-                    type="text"
-                    placeholder="CVV: 123"
-                    className="box-input"
-                  />
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: '1fr', 
+          gap: 32 
+        }}>
+          {/* Desktop: 2 columns, Mobile: 1 column */}
+          <style>{`
+            @media (min-width: 769px) {
+              .checkout-grid {
+                grid-template-columns: 1.5fr 1fr !important;
+              }
+            }
+          `}</style>
+
+          <div className="checkout-grid" style={{ display: 'grid', gap: 32 }}>
+            {/* Form Section */}
+            <form onSubmit={handleSubmit} style={{ background: 'white', padding: 'clamp(20px, 4vw, 32px)', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)' }}>
+              <h2 style={{ fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', fontWeight: 400, marginBottom: 24, color: 'var(--charcoal)' }}>
+                Delivery Information
+              </h2>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 20 }}>
+                  <style>{`
+                    @media (min-width: 640px) {
+                      .name-email-grid {
+                        grid-template-columns: 1fr 1fr !important;
+                      }
+                    }
+                  `}</style>
+                  
+                  <div className="name-email-grid" style={{ display: 'grid', gap: 20 }}>
+                    <div>
+                      <label className="field-label">Full Name</label>
+                      <input type="text" name="name" value={formData.name} onChange={handleChange} required className="field-input" />
+                    </div>
+
+                    <div>
+                      <label className="field-label">Email</label>
+                      <input type="email" name="email" value={formData.email} onChange={handleChange} required className="field-input" />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="field-label">Phone Number</label>
+                  <input type="tel" name="phone" value={formData.phone} onChange={handleChange} required className="field-input" />
+                </div>
+
+                <div>
+                  <label className="field-label">Street Address</label>
+                  <input type="text" name="address" value={formData.address} onChange={handleChange} required className="field-input" />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 20 }}>
+                  <style>{`
+                    @media (min-width: 640px) {
+                      .city-postal-grid {
+                        grid-template-columns: 1.5fr 1fr !important;
+                      }
+                    }
+                  `}</style>
+                  
+                  <div className="city-postal-grid" style={{ display: 'grid', gap: 20 }}>
+                    <div>
+                      <label className="field-label">City</label>
+                      <input type="text" name="city" value={formData.city} onChange={handleChange} required className="field-input" />
+                    </div>
+
+                    <div>
+                      <label className="field-label">Postal Code</label>
+                      <input type="text" name="postalCode" value={formData.postalCode} onChange={handleChange} required className="field-input" />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="field-label">Payment Method</label>
+                  <select name="paymentMethod" value={formData.paymentMethod} onChange={handleChange} className="field-input">
+                    <option value="card">Credit/Debit Card</option>
+                    <option value="cash">Cash on Delivery</option>
+                    <option value="paypal">PayPal</option>
+                  </select>
                 </div>
               </div>
-              <p style={{ fontSize: '0.7rem', color: 'var(--stone-500)', marginTop: 12, fontFamily: 'Jost, sans-serif' }}>
-                * This is a simulation - no real payment will be processed
-              </p>
-            </div>
-          )}
-        </div>
 
-        {/* Order Summary */}
-        <div>
-          <div style={{ background: 'white', border: '1px solid var(--stone-200)', padding: 28, position: 'sticky', top: 100 }}>
-            
-            <h2 className="font-display" style={{ fontSize: '1.4rem', fontWeight: 400, color: 'var(--charcoal)', marginBottom: 24 }}>
-              Order Summary
-            </h2>
+              <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', marginTop: 32 }}>
+                {loading ? 'Processing...' : `Place Order - R ${total.toLocaleString()}`}
+              </button>
+            </form>
 
-            <div style={{ maxHeight: 240, overflowY: 'auto', marginBottom: 20 }}>
-              {cart.map(item => {
-                const itemPrice = item.price * (1 - (item.discount || 0) / 100);
-                return (
-                  <div key={item._id} style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
-                    <div style={{ 
-                      width: 60, 
-                      height: 60, 
-                      background: 'var(--stone-100)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}>
-                      <img
-                        src={item.images?.[0] || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=100'}
+            {/* Order Summary */}
+            <div>
+              <div style={{ background: 'white', padding: 'clamp(20px, 4vw, 32px)', borderRadius: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.08)', position: 'sticky', top: 100 }}>
+                <h2 style={{ fontSize: 'clamp(1.2rem, 3vw, 1.5rem)', fontWeight: 400, marginBottom: 24, color: 'var(--charcoal)' }}>
+                  Order Summary
+                </h2>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
+                  {cart.map(item => (
+                    <div key={item._id} style={{ display: 'flex', gap: 12, paddingBottom: 16, borderBottom: '1px solid var(--stone-100)' }}>
+                      <img 
+                        src={item.images?.[0] || 'https://via.placeholder.com/80'} 
                         alt={item.name}
-                        style={{ 
-                          width: '100%', 
-                          height: '100%', 
-                          objectFit: 'contain',
-                          padding: '4px'
-                        }}
+                        style={{ width: 60, height: 60, objectFit: 'contain', background: 'var(--stone-50)', borderRadius: 2, flexShrink: 0 }}
                       />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ fontSize: '0.8rem', fontFamily: 'Jost, sans-serif', fontWeight: 500, color: 'var(--charcoal)', marginBottom: 2, lineHeight: 1.3 }}>
-                        {item.name}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--charcoal)', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.name}
+                        </p>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--stone-600)' }}>
+                          Qty: {item.quantity}
+                        </p>
+                      </div>
+                      <p style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--charcoal)', flexShrink: 0 }}>
+                        R {(item.price * item.quantity).toLocaleString()}
                       </p>
-                      <p style={{ fontSize: '0.7rem', color: 'var(--stone-500)', fontFamily: 'Jost, sans-serif' }}>
-                        Qty: {item.quantity}
-                      </p>
                     </div>
-                    <p className="font-display" style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--charcoal)' }}>
-                      R {(itemPrice * item.quantity).toLocaleString()}
-                    </p>
+                  ))}
+                </div>
+
+                <div style={{ paddingTop: 16, borderTop: '2px solid var(--stone-200)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--stone-600)' }}>Subtotal</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>R {total.toLocaleString()}</span>
                   </div>
-                );
-              })}
-            </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--stone-600)' }}>Delivery</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--accent)' }}>
+                      {total >= 2000 ? 'Free' : 'R 150'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 16, borderTop: '1px solid var(--stone-200)' }}>
+                    <span style={{ fontSize: '1rem', fontWeight: 500 }}>Total</span>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--accent)' }}>
+                      R {(total + (total >= 2000 ? 0 : 150)).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
 
-            <div style={{ borderTop: '1px solid var(--stone-200)', paddingTop: 20, marginBottom: 24 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <span style={{ fontSize: '0.7rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--stone-600)', fontFamily: 'Jost, sans-serif', fontWeight: 500 }}>
-                  Total
-                </span>
-                <span className="font-display" style={{ fontSize: '2rem', fontWeight: 500, color: 'var(--charcoal)' }}>
-                  R {cartTotal.toLocaleString()}
-                </span>
+                {total >= 2000 && (
+                  <div style={{ marginTop: 16, padding: '12px 16px', background: '#e8f5e9', borderRadius: 4, fontSize: '0.8rem', color: '#2e7d32' }}>
+                    ✓ You qualify for free white glove delivery!
+                  </div>
+                )}
               </div>
             </div>
-
-            {error && (
-              <div style={{ background: '#fdf0f0', border: '1px solid #f5c0c0', borderRadius: 0, padding: '12px 16px', marginBottom: 20, fontSize: '0.8rem', color: '#8a2020', fontFamily: 'Jost, sans-serif' }}>
-                {error}
-              </div>
-            )}
-
-            <button
-              onClick={handlePlaceOrder}
-              disabled={loading}
-              className="btn-primary"
-              style={{ width: '100%', justifyContent: 'center', fontSize: '0.8rem' }}
-            >
-              {loading ? (
-                'Processing...'
-              ) : (
-                `Place Order • R ${cartTotal.toLocaleString()}`
-              )}
-            </button>
           </div>
         </div>
       </div>
