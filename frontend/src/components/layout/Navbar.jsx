@@ -7,7 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 const Navbar = () => {
   const location = useLocation();
   const { cart } = useCart();
-  const { isLoggedIn, logout } = useAuth();
+  const { isLoggedIn, logout, user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
 
@@ -181,6 +181,29 @@ const Navbar = () => {
                   minWidth: 180,
                   zIndex: 1000
                 }}>
+                  {/* Admin Dashboard Link - ONLY for admins */}
+                  {user?.role === 'admin' && (
+                    <Link 
+                      to="/admin" 
+                      onClick={() => setShowUserMenu(false)}
+                      style={{ 
+                        display: 'block',
+                        padding: '12px 16px', 
+                        textDecoration: 'none', 
+                        color: 'var(--accent)',
+                        fontSize: '0.85rem',
+                        fontFamily: 'Jost, sans-serif',
+                        fontWeight: 500,
+                        borderBottom: '1px solid var(--stone-100)',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = 'var(--stone-50)'}
+                      onMouseLeave={(e) => e.target.style.background = 'white'}
+                    >
+                      ⚙️ Admin Dashboard
+                    </Link>
+                  )}
+
                   <Link 
                     to="/profile" 
                     onClick={() => setShowUserMenu(false)}
@@ -199,24 +222,29 @@ const Navbar = () => {
                   >
                     👤 My Profile
                   </Link>
-                  <Link 
-                    to="/orders/my-orders" 
-                    onClick={() => setShowUserMenu(false)}
-                    style={{ 
-                      display: 'block',
-                      padding: '12px 16px', 
-                      textDecoration: 'none', 
-                      color: 'var(--charcoal)',
-                      fontSize: '0.85rem',
-                      fontFamily: 'Jost, sans-serif',
-                      borderBottom: '1px solid var(--stone-100)',
-                      transition: 'background 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.target.style.background = 'var(--stone-50)'}
-                    onMouseLeave={(e) => e.target.style.background = 'white'}
-                  >
-                    📦 My Orders
-                  </Link>
+
+                  {/* My Orders - ONLY for customers */}
+                  {user?.role !== 'admin' && (
+                    <Link 
+                      to="/orders/my-orders" 
+                      onClick={() => setShowUserMenu(false)}
+                      style={{ 
+                        display: 'block',
+                        padding: '12px 16px', 
+                        textDecoration: 'none', 
+                        color: 'var(--charcoal)',
+                        fontSize: '0.85rem',
+                        fontFamily: 'Jost, sans-serif',
+                        borderBottom: '1px solid var(--stone-100)',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = 'var(--stone-50)'}
+                      onMouseLeave={(e) => e.target.style.background = 'white'}
+                    >
+                      📦 My Orders
+                    </Link>
+                  )}
+
                   <button 
                     onClick={() => {
                       logout();
@@ -318,6 +346,27 @@ const Navbar = () => {
             
             {isLoggedIn && (
               <>
+                {/* Admin Dashboard - ONLY for admins */}
+                {user?.role === 'admin' && (
+                  <Link 
+                    to="/admin"
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={{
+                      textDecoration: 'none',
+                      color: 'var(--accent)',
+                      fontSize: '0.9rem',
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase',
+                      fontFamily: 'Jost, sans-serif',
+                      fontWeight: 500,
+                      padding: '8px 0',
+                      borderBottom: '1px solid var(--stone-100)'
+                    }}
+                  >
+                    ⚙️ Admin Dashboard
+                  </Link>
+                )}
+
                 <Link 
                   to="/profile"
                   onClick={() => setMobileMenuOpen(false)}
@@ -334,22 +383,27 @@ const Navbar = () => {
                 >
                   👤 My Profile
                 </Link>
-                <Link 
-                  to="/orders/my-orders"
-                  onClick={() => setMobileMenuOpen(false)}
-                  style={{
-                    textDecoration: 'none',
-                    color: 'var(--stone-600)',
-                    fontSize: '0.9rem',
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase',
-                    fontFamily: 'Jost, sans-serif',
-                    padding: '8px 0',
-                    borderBottom: '1px solid var(--stone-100)'
-                  }}
-                >
-                  📦 My Orders
-                </Link>
+
+                {/* My Orders - ONLY for customers */}
+                {user?.role !== 'admin' && (
+                  <Link 
+                    to="/orders/my-orders"
+                    onClick={() => setMobileMenuOpen(false)}
+                    style={{
+                      textDecoration: 'none',
+                      color: 'var(--stone-600)',
+                      fontSize: '0.9rem',
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase',
+                      fontFamily: 'Jost, sans-serif',
+                      padding: '8px 0',
+                      borderBottom: '1px solid var(--stone-100)'
+                    }}
+                  >
+                    📦 My Orders
+                  </Link>
+                )}
+
                 <button
                   onClick={() => {
                     logout();

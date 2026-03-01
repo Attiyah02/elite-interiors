@@ -24,11 +24,18 @@ const CheckoutPage = () => {
 
   const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
+  // Redirect admins away from checkout
   useEffect(() => {
+    if (user?.role === 'admin') {
+      alert('Admins cannot place orders. Please use a customer account.');
+      navigate('/admin');
+      return;
+    }
+
     if (cart.length === 0) {
       navigate('/cart');
     }
-  }, [cart, navigate]);
+  }, [cart, navigate, user]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -58,6 +65,11 @@ const CheckoutPage = () => {
     }
   };
 
+  // Don't render checkout for admins
+  if (user?.role === 'admin') {
+    return null;
+  }
+
   return (
     <div style={{ minHeight: '80vh', background: 'var(--warm-white)', padding: '48px 0' }}>
       <div className="container">
@@ -81,7 +93,6 @@ const CheckoutPage = () => {
           gridTemplateColumns: '1fr', 
           gap: 32 
         }}>
-          {/* Desktop: 2 columns, Mobile: 1 column */}
           <style>{`
             @media (min-width: 769px) {
               .checkout-grid {
