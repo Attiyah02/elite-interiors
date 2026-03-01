@@ -313,7 +313,7 @@ const AdminReports = () => {
 
           {productReport?.bestSelling?.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {productReport.topProducts.slice(0, 5).map((product, idx) => (
+              {productReport.bestSelling.slice(0, 5).map((product, idx) => (
                 <div 
                   key={idx}
                   style={{
