@@ -230,7 +230,7 @@ const AdminReports = () => {
               fontWeight: 600,
               color: 'var(--charcoal)'
             }}>
-              R {(financialReport?.avgOrderValue || 0).toLocaleString()}
+              R {(financialReport?.averageOrderValue || 0).toLocaleString()}
             </p>
           </div>
         </div>
@@ -311,7 +311,7 @@ const AdminReports = () => {
             Top Selling Products
           </h3>
 
-          {productReport?.topProducts?.length > 0 ? (
+          {productReport?.bestSelling?.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {productReport.topProducts.slice(0, 5).map((product, idx) => (
                 <div 
