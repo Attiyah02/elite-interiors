@@ -18,16 +18,21 @@ const AdminOrders = () => {
   }, [search, statusFilter, orders]);
 
   const fetchOrders = async () => {
-    try {
-      const res = await adminAPI.getOrders({});
-      setOrders(res.data.orders || []);
-      setFilteredOrders(res.data.orders || []);
-    } catch (error) {
-      console.error('Error fetching orders:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    const res = await adminAPI.getOrders({});
+    console.log('📦 Orders response:', res.data);
+    
+    // Backend returns array directly, not {orders: []}
+    const ordersData = Array.isArray(res.data) ? res.data : [];
+    setOrders(ordersData);
+    setFilteredOrders(ordersData);
+    
+  } catch (error) {
+    console.error('Error fetching orders:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const filterOrders = () => {
     let filtered = [...orders];

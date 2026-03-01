@@ -13,22 +13,27 @@ const AdminReports = () => {
   }, []);
 
   const fetchReports = async () => {
-    try {
-      const [financial, products, customers] = await Promise.all([
-        adminAPI.getFinancialReport(),
-        adminAPI.getProductReport(),
-        adminAPI.getCustomerReport()
-      ]);
+  try {
+    const [financial, products, customers] = await Promise.all([
+      adminAPI.getFinancialReport(),
+      adminAPI.getProductReport(),
+      adminAPI.getCustomerReport()
+    ]);
 
-      setFinancialReport(financial.data);
-      setProductReport(products.data);
-      setCustomerReport(customers.data);
-    } catch (error) {
-      console.error('Error fetching reports:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    console.log('💰 Financial report:', financial.data);
+    console.log('📦 Product report:', products.data);
+    console.log('👥 Customer report:', customers.data);
+
+    setFinancialReport(financial.data.summary || {});
+    setProductReport(products.data || {});
+    setCustomerReport(customers.data.summary || {});
+    
+  } catch (error) {
+    console.error('Error fetching reports:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const exportReport = (reportName, data) => {
     const jsonStr = JSON.stringify(data, null, 2);

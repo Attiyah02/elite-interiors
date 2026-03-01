@@ -20,31 +20,40 @@ const AdminDashboard = () => {
   }, []);
 
   const fetchData = async () => {
-    try {
-      const [financialRes, ordersRes, customersRes] = await Promise.all([
-        adminAPI.getFinancialReport(),
-        adminAPI.getOrders({ limit: 5 }),
-        adminAPI.getCustomers()
-      ]);
+  try {
+    const [financialRes, ordersRes, customersRes] = await Promise.all([
+      adminAPI.getFinancialReport(),
+      adminAPI.getOrders({ limit: 5 }),
+      adminAPI.getCustomers()
+    ]);
 
-      const financial = financialRes.data;
-      
-      setStats({
-        revenue: financial.totalRevenue || 0,
-        orders: financial.totalOrders || 0,
-        customers: customersRes.data.length || 0,
-        avgOrderValue: financial.avgOrderValue || 0,
-        profit: financial.totalProfit || 0,
-        margin: financial.profitMargin || 0
-      });
+    console.log('📊 Financial Response:', financialRes.data);
+    console.log('📦 Orders Response:', ordersRes.data);
+    console.log('👥 Customers Response:', customersRes.data);
 
-      setRecentOrders(ordersRes.data.orders || []);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Backend returns {summary: {...}, monthlyRevenue: [...], paymentBreakdown: [...]}
+    const financial = financialRes.data.summary || financialRes.data;
+    
+    setStats({
+      revenue: financial.totalRevenue || 0,
+      orders: financial.totalOrders || 0,
+      customers: customersRes.data.length || 0,
+      avgOrderValue: financial.averageOrderValue || 0,
+      profit: financial.totalProfit || 0,
+      margin: parseFloat(financial.profitMargin) || 0
+    });
+
+    // Backend returns orders as direct array, not {orders: [...]}
+    const ordersData = Array.isArray(ordersRes.data) ? ordersRes.data.slice(0, 5) : [];
+    setRecentOrders(ordersData);
+    
+  } catch (error) {
+    console.error('❌ Error fetching dashboard data:', error);
+    console.error('❌ Error response:', error.response?.data);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const statCards = [
     {

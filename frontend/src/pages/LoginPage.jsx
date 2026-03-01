@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { authAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
@@ -12,50 +11,51 @@ const LoginPage = () => {
   const { login } = useAuth();
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setLoading(true);
+    e.preventDefault();
+    setError('');
+    setLoading(true);
 
-  try {
-    // Use the AuthContext login - it handles everything
-    const userData = await login(email, password);
-    
-    // Set welcome message
-    sessionStorage.setItem('showWelcome', 'true');
-    sessionStorage.setItem('userName', userData.profile?.name || userData.email?.split('@')[0]);
-    
-    // Redirect based on role
-    if (userData.role === 'admin') {
-      navigate('/admin');
-    } else {
-      navigate('/');
-    }
-    
-  } catch (err) {
-    console.error('❌ Login error:', err);
-    
-    if (err.response) {
-      const status = err.response.status;
-      const message = err.response.data?.message;
-
-      if (status === 401) {
-        setError('Invalid email or password. Please try again.');
-      } else if (status === 404) {
-        setError('Account not found. Please check your email or register.');
-      } else if (status === 500) {
-        setError('Server error. Please try again later.');
+    try {
+      // Use AuthContext login - it handles API call and localStorage
+      const userData = await login(email, password);
+      
+      // Set welcome message
+      sessionStorage.setItem('showWelcome', 'true');
+      sessionStorage.setItem('userName', userData.profile?.name || userData.email?.split('@')[0]);
+      
+      // Redirect based on role
+      if (userData.role === 'admin') {
+        navigate('/admin');
       } else {
-        setError(message || 'Login failed. Please try again.');
+        navigate('/');
       }
-    } else if (err.request) {
-      setError('Cannot connect to server. Please check your internet connection.');
-    } else {
-      setError('An unexpected error occurred. Please try again.');
+      
+    } catch (err) {
+      console.error('Login error:', err);
+      
+      // Handle different error types
+      if (err.response) {
+        const status = err.response.status;
+        const message = err.response.data?.message;
+
+        if (status === 401) {
+          setError('Invalid email or password. Please try again.');
+        } else if (status === 404) {
+          setError('Account not found. Please check your email or register.');
+        } else if (status === 500) {
+          setError('Server error. Please try again later.');
+        } else {
+          setError(message || 'Login failed. Please try again.');
+        }
+      } else if (err.request) {
+        setError('Cannot connect to server. Please check your internet connection.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <div style={{ 
@@ -136,7 +136,7 @@ const LoginPage = () => {
               value={email} 
               onChange={(e) => {
                 setEmail(e.target.value);
-                setError(''); // Clear error when user starts typing
+                setError('');
               }}
               required 
               className="field-input" 
@@ -153,7 +153,7 @@ const LoginPage = () => {
               value={password} 
               onChange={(e) => {
                 setPassword(e.target.value);
-                setError(''); // Clear error when user starts typing
+                setError('');
               }}
               required 
               className="field-input" 
@@ -162,7 +162,6 @@ const LoginPage = () => {
               autoComplete="current-password"
             />
             
-            {/* Forgot Password Link */}
             <Link 
               to="/forgot-password" 
               style={{ 
@@ -235,7 +234,7 @@ const LoginPage = () => {
             margin: 0
           }}>
             <strong>Demo Admin Account:</strong><br />
-            Email: admin@eliteinteriors.com<br />
+            Email: admin@furniture.com<br />
             Password: Admin123!
           </p>
         </div>
