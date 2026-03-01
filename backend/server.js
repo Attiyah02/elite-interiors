@@ -17,6 +17,65 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// TEMPORARY DEBUG ROUTES - Add before your other routes
+app.get('/api/test-reports', async (req, res) => {
+  const Order = require('./models/Order');
+  const Product = require('./models/Product');
+  const User = require('./models/User');
+
+  try {
+    // Test 1: Financial Report
+    console.log('Testing financial report...');
+    const orders = await Order.find({ status: 'complete' });
+    console.log('Complete orders:', orders.length);
+    
+    let totalRevenue = 0;
+    let totalCost = 0;
+    
+    for (const order of orders) {
+      totalRevenue += order.total || 0;
+      console.log('Processing order:', order._id, 'Total:', order.total);
+      
+      for (const item of order.items) {
+        console.log('  Item:', item.name, 'ProductID:', item.productId);
+        try {
+          const product = await Product.findById(item.productId);
+          if (product) {
+            const cost = product.costPrice || (product.price * 0.6);
+            totalCost += cost * item.quantity;
+            console.log('    Product found, cost:', cost);
+          } else {
+            console.log('    Product NOT found for ID:', item.productId);
+          }
+        } catch (err) {
+          console.log('    Error fetching product:', err.message);
+        }
+      }
+    }
+    
+    // Test 2: Product Report
+    console.log('\nTesting product report...');
+    const products = await Product.find().limit(5);
+    console.log('Products found:', products.length);
+    
+    // Test 3: Customer Report
+    console.log('\nTesting customer report...');
+    const customers = await User.find({ role: 'customer' });
+    console.log('Customers found:', customers.length);
+    
+    res.json({
+      success: true,
+      financial: { totalRevenue, totalCost, ordersCount: orders.length },
+      products: products.length,
+      customers: customers.length
+    });
+    
+  } catch (error) {
+    console.error('Test error:', error);
+    res.status(500).json({ error: error.message, stack: error.stack });
+  }
+});
+
 // Test route
 app.get('/api/test', (req, res) => {
   res.json({ message: 'Backend is working!' });
