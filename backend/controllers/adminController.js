@@ -38,7 +38,7 @@ const getAllCustomers = async (req, res) => {
     const customersWithStats = await Promise.all(
       customers.map(async (customer) => {
         const orders = await Order.find({ userId: customer._id });
-        const totalSpent = orders.reduce((sum, order) => sum + order.total, 0);
+        const totalSpent = orders.reduce((sum, order) => sum + (order.total || 0), 0);
         return {
           ...customer.toObject(),
           orderCount: orders.length,
@@ -59,15 +59,22 @@ const getFinancialReport = async (req, res) => {
     const orders = await Order.find({ status: 'complete' });
 
     // Total revenue
-    const totalRevenue = orders.reduce((sum, order) => sum + order.total, 0);
+    const totalRevenue = orders.reduce((sum, order) => sum + (order.total || 0), 0);
 
-    // Calculate cost of sales
+    // Calculate cost of sales - handle missing products
     let totalCost = 0;
     for (const order of orders) {
       for (const item of order.items) {
-        const product = await Product.findById(item.productId);
-        if (product) {
-          totalCost += product.costPrice * item.quantity;
+        try {
+          const product = await Product.findById(item.productId);
+          if (product) {
+            const cost = product.costPrice || (product.price * 0.6);
+            totalCost += cost * item.quantity;
+          }
+          // Skip if product not found (deleted product)
+        } catch (err) {
+          console.error('Error fetching product:', err.message);
+          // Skip on error
         }
       }
     }
@@ -78,18 +85,22 @@ const getFinancialReport = async (req, res) => {
     // Monthly revenue breakdown
     const monthlyRevenue = {};
     orders.forEach(order => {
-      const month = new Date(order.createdAt).toLocaleString('default', {
-        month: 'short',
-        year: 'numeric'
-      });
-      monthlyRevenue[month] = (monthlyRevenue[month] || 0) + order.total;
+      try {
+        const month = new Date(order.createdAt).toLocaleString('default', {
+          month: 'short',
+          year: 'numeric'
+        });
+        monthlyRevenue[month] = (monthlyRevenue[month] || 0) + (order.total || 0);
+      } catch (err) {
+        console.error('Error processing order date:', err);
+      }
     });
 
     // Payment method breakdown
     const paymentBreakdown = {};
     orders.forEach(order => {
-      paymentBreakdown[order.paymentMethod] =
-        (paymentBreakdown[order.paymentMethod] || 0) + order.total;
+      const method = order.paymentMethod || 'unknown';
+      paymentBreakdown[method] = (paymentBreakdown[method] || 0) + (order.total || 0);
     });
 
     res.json({
@@ -112,6 +123,7 @@ const getFinancialReport = async (req, res) => {
     });
 
   } catch (error) {
+    console.error('Financial report error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -143,8 +155,8 @@ const getProductReport = async (req, res) => {
           productCount: 0
         };
       }
-      categoryStats[product.category].totalSales += product.salesCount;
-      categoryStats[product.category].totalRevenue += product.salesCount * product.price;
+      categoryStats[product.category].totalSales += product.salesCount || 0;
+      categoryStats[product.category].totalRevenue += (product.salesCount || 0) * (product.price || 0);
       categoryStats[product.category].productCount += 1;
     });
 
@@ -155,6 +167,7 @@ const getProductReport = async (req, res) => {
     });
 
   } catch (error) {
+    console.error('Product report error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -168,18 +181,20 @@ const getCustomerReport = async (req, res) => {
     // Top customers by spending
     const customerSpending = {};
     orders.forEach(order => {
-      const userId = order.userId._id.toString();
-      if (!customerSpending[userId]) {
-        customerSpending[userId] = {
-          userId,
-          email: order.userId.email,
-          name: order.userId.profile?.name || 'Unknown',
-          totalSpent: 0,
-          orderCount: 0
-        };
+      if (order.userId && order.userId._id) {
+        const userId = order.userId._id.toString();
+        if (!customerSpending[userId]) {
+          customerSpending[userId] = {
+            userId,
+            email: order.userId.email || 'N/A',
+            name: order.userId.profile?.name || 'Unknown',
+            totalSpent: 0,
+            orderCount: 0
+          };
+        }
+        customerSpending[userId].totalSpent += order.total || 0;
+        customerSpending[userId].orderCount += 1;
       }
-      customerSpending[userId].totalSpent += order.total;
-      customerSpending[userId].orderCount += 1;
     });
 
     const topCustomers = Object.values(customerSpending)
@@ -189,11 +204,15 @@ const getCustomerReport = async (req, res) => {
     // New customers per month
     const monthlyNewCustomers = {};
     customers.forEach(customer => {
-      const month = new Date(customer.createdAt).toLocaleString('default', {
-        month: 'short',
-        year: 'numeric'
-      });
-      monthlyNewCustomers[month] = (monthlyNewCustomers[month] || 0) + 1;
+      try {
+        const month = new Date(customer.createdAt).toLocaleString('default', {
+          month: 'short',
+          year: 'numeric'
+        });
+        monthlyNewCustomers[month] = (monthlyNewCustomers[month] || 0) + 1;
+      } catch (err) {
+        console.error('Error processing customer date:', err);
+      }
     });
 
     res.json({
@@ -213,6 +232,7 @@ const getCustomerReport = async (req, res) => {
     });
 
   } catch (error) {
+    console.error('Customer report error:', error);
     res.status(500).json({ message: error.message });
   }
 };
