@@ -13,7 +13,8 @@ import CheckoutPage from './pages/CheckoutPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
-import OrderHistoryPage from './pages/OrderHistoryPage';
+import MyOrdersPage from './pages/MyOrdersPage';
+import OrderSuccessPage from './pages/OrderSuccessPage';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -47,8 +48,11 @@ const AppRoutes = () => {
         <Route path="/profile" element={
           <ProtectedRoute><Layout><ProfilePage /></Layout></ProtectedRoute>
         } />
-        <Route path="/orders" element={
-          <ProtectedRoute><Layout><OrderHistoryPage /></Layout></ProtectedRoute>
+        <Route path="/orders/my-orders" element={
+          <ProtectedRoute><Layout><MyOrdersPage /></Layout></ProtectedRoute>
+        } />
+        <Route path="/order-success" element={
+          <ProtectedRoute><Layout><OrderSuccessPage /></Layout></ProtectedRoute>
         } />
 
         {/* Admin Routes - Using AdminLayout */}
