@@ -1,148 +1,35 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Search, X } from 'lucide-react';
-import { productsAPI, categoriesAPI } from '../../utils/api';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { Search, Plus, Edit2, Trash2 } from 'lucide-react';
+import { productsAPI } from '../../utils/api';
 
 const AdminProducts = () => {
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [editingProduct, setEditingProduct] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [saving, setSaving] = useState(false);
-
-  const emptyForm = {
-    name: '', description: '', category: '', subcategory: '',
-    price: '', costPrice: '', discount: 0,
-    specifications: {
-      dimensions: { length: '', width: '', height: '', weight: '' },
-      material: { primary: '', frame: '', filling: '' },
-      seatingCapacity: '',
-      colors: '',
-      assembly: '',
-      assemblyTime: '',
-      spaceEfficient: false,
-      style: ''
-    },
-    images: '',
-    tags: '',
-    roomType: '',
-    inStock: true
-  };
-
-  const [form, setForm] = useState(emptyForm);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchData();
+    fetchProducts();
   }, []);
 
-  const fetchData = async () => {
+  const fetchProducts = async () => {
     try {
-      const [prodRes, catRes] = await Promise.all([
-        productsAPI.getAll(),
-        categoriesAPI.getAll()
-      ]);
-      setProducts(prodRes.data.products);
-      setCategories(catRes.data);
+      const res = await productsAPI.getAll({});
+      setProducts(res.data.products || []);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error fetching products:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const openAddModal = () => {
-    setEditingProduct(null);
-    setForm(emptyForm);
-    setShowModal(true);
-  };
-
-  const openEditModal = (product) => {
-    setEditingProduct(product);
-    setForm({
-      name: product.name || '',
-      description: product.description || '',
-      category: product.category || '',
-      subcategory: product.subcategory || '',
-      price: product.price || '',
-      costPrice: product.costPrice || '',
-      discount: product.discount || 0,
-      specifications: {
-        dimensions: {
-          length: product.specifications?.dimensions?.length || '',
-          width: product.specifications?.dimensions?.width || '',
-          height: product.specifications?.dimensions?.height || '',
-          weight: product.specifications?.dimensions?.weight || ''
-        },
-        material: {
-          primary: product.specifications?.material?.primary || '',
-          frame: product.specifications?.material?.frame || '',
-          filling: product.specifications?.material?.filling || ''
-        },
-        seatingCapacity: product.specifications?.seatingCapacity || '',
-        colors: product.specifications?.colors?.join(', ') || '',
-        assembly: product.specifications?.assembly || '',
-        assemblyTime: product.specifications?.assemblyTime || '',
-        spaceEfficient: product.specifications?.spaceEfficient || false,
-        style: product.specifications?.style?.join(', ') || ''
-      },
-      images: product.images?.join(', ') || '',
-      tags: product.tags?.join(', ') || '',
-      roomType: product.roomType || '',
-      inStock: product.inStock !== false
-    });
-    setShowModal(true);
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this product?')) return;
+    
     try {
-      const productData = {
-        ...form,
-        price: Number(form.price),
-        costPrice: Number(form.costPrice),
-        discount: Number(form.discount),
-        specifications: {
-          ...form.specifications,
-          dimensions: {
-            length: Number(form.specifications.dimensions.length),
-            width: Number(form.specifications.dimensions.width),
-            height: Number(form.specifications.dimensions.height),
-            weight: Number(form.specifications.dimensions.weight)
-          },
-          seatingCapacity: Number(form.specifications.seatingCapacity) || undefined,
-          colors: form.specifications.colors.split(',').map(c => c.trim()).filter(Boolean),
-          style: form.specifications.style.split(',').map(s => s.trim()).filter(Boolean),
-        },
-        images: form.images.split(',').map(i => i.trim()).filter(Boolean),
-        tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-      };
-
-      if (editingProduct) {
-        await productsAPI.update(editingProduct._id, productData);
-      } else {
-        await productsAPI.create(productData);
-      }
-
-      setShowModal(false);
-      fetchData();
+      await productsAPI.delete(id);
+      setProducts(products.filter(p => p._id !== id));
     } catch (error) {
-      console.error('Save error:', error);
-      alert('Error saving product. Check all fields.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async (productId) => {
-    try {
-      await productsAPI.delete(productId);
-      setDeleteConfirm(null);
-      fetchData();
-    } catch (error) {
-      console.error('Delete error:', error);
+      alert('Failed to delete product');
     }
   };
 
@@ -151,422 +38,297 @@ const AdminProducts = () => {
     p.category.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) {
+    return (
+      <div style={{ padding: 'clamp(32px, 5vw, 48px)' }}>
+        <p style={{ textAlign: 'center', color: 'var(--stone-600)', fontFamily: 'Jost, sans-serif' }}>
+          Loading products...
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div>
+    <div style={{ padding: 'clamp(24px, 4vw, 48px)', maxWidth: 1400, margin: '0 auto' }}>
+      
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-800">Products</h1>
-          <p className="text-gray-500 mt-1">{products.length} products total</p>
-        </div>
-        <button
-          onClick={openAddModal}
-          className="flex items-center gap-2 bg-amber-600 text-white px-5 py-2.5 rounded-xl font-semibold hover:bg-amber-700 transition"
-        >
-          <Plus size={20} />
-          Add Product
-        </button>
+      <div style={{ marginBottom: 32 }}>
+        <h1 className="font-display" style={{ 
+          fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', 
+          fontWeight: 400,
+          color: 'var(--charcoal)',
+          marginBottom: 8
+        }}>
+          Products
+        </h1>
+        <p style={{ 
+          fontSize: 'clamp(0.85rem, 2vw, 0.9rem)', 
+          color: 'var(--stone-600)',
+          fontFamily: 'Jost, sans-serif'
+        }}>
+          {filteredProducts.length} products total
+        </p>
       </div>
 
-      {/* Search */}
-      <div className="bg-white rounded-2xl shadow-md p-4 mb-6">
-        <div className="relative">
-          <Search size={18} className="absolute left-3 top-2.5 text-gray-400" />
+      {/* Actions Bar */}
+      <div style={{ 
+        display: 'flex',
+        gap: 16,
+        marginBottom: 32,
+        flexWrap: 'wrap'
+      }}>
+        <div style={{ position: 'relative', flex: '1 1 300px' }}>
+          <Search 
+            size={18} 
+            style={{ 
+              position: 'absolute',
+              left: 16,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--stone-400)'
+            }}
+          />
           <input
             type="text"
             placeholder="Search products by name or category..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-400"
+            style={{
+              width: '100%',
+              padding: '12px 16px 12px 48px',
+              border: '1px solid var(--stone-200)',
+              fontSize: '0.9rem',
+              fontFamily: 'Jost, sans-serif',
+              borderRadius: 2
+            }}
           />
         </div>
+
+        <button
+          onClick={() => alert('Add product feature coming soon')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '12px 24px',
+            background: 'var(--accent)',
+            color: 'white',
+            border: 'none',
+            fontSize: '0.85rem',
+            fontFamily: 'Jost, sans-serif',
+            fontWeight: 500,
+            letterSpacing: '0.02em',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            whiteSpace: 'nowrap'
+          }}
+          onMouseEnter={(e) => e.target.style.background = '#B8935A'}
+          onMouseLeave={(e) => e.target.style.background = 'var(--accent)'}
+        >
+          <Plus size={18} />
+          Add Product
+        </button>
       </div>
 
       {/* Products Table */}
-      <div className="bg-white rounded-2xl shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase px-6 py-4">Product</th>
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase px-6 py-4">Category</th>
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase px-6 py-4">Price</th>
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase px-6 py-4">Cost</th>
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase px-6 py-4">Sales</th>
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase px-6 py-4">Views</th>
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase px-6 py-4">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.map(product => (
-                <tr key={product._id} className="border-t border-gray-100 hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={product.images?.[0] || 'https://via.placeholder.com/40'}
-                        alt={product.name}
-                        className="w-10 h-10 rounded-lg object-cover"
-                      />
-                      <div>
-                        <p className="font-semibold text-gray-800 text-sm">{product.name}</p>
-                        <p className="text-xs text-gray-400">{product.tags?.slice(0, 2).join(', ')}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{product.category}</td>
-                  <td className="px-6 py-4">
-                    <p className="font-bold text-amber-600">R {product.price?.toLocaleString()}</p>
-                    {product.discount > 0 && (
-                      <span className="text-xs bg-red-100 text-red-600 px-1.5 py-0.5 rounded-full">
-                        -{product.discount}%
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    R {product.costPrice?.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="font-semibold text-green-600">{product.salesCount}</span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{product.views}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => openEditModal(product)}
-                        className="p-2 text-blue-500 hover:bg-blue-50 rounded-lg transition"
-                        title="Edit"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                      <button
-                        onClick={() => setDeleteConfirm(product._id)}
-                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
-                        title="Delete"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Add/Edit Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b">
-              <h2 className="text-xl font-bold text-gray-800">
-                {editingProduct ? 'Edit Product' : 'Add New Product'}
-              </h2>
-              <button onClick={() => setShowModal(false)}>
-                <X size={24} className="text-gray-400 hover:text-gray-600" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-
-              {/* Basic Info */}
-              <div>
-                <h3 className="font-bold text-gray-700 mb-4">Basic Information</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
-                    <input
-                      type="text"
-                      value={form.name}
-                      onChange={(e) => setForm({ ...form, name: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      placeholder="e.g. Compact Oslo Sofa"
+      <div style={{ background: 'white', border: '1px solid var(--stone-200)', borderRadius: 2, overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 800 }}>
+          <thead>
+            <tr style={{ background: 'var(--stone-50)' }}>
+              <th style={{ 
+                padding: '16px 24px',
+                textAlign: 'left',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                color: 'var(--stone-700)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                fontFamily: 'Jost, sans-serif',
+                width: '40%'
+              }}>
+                Product
+              </th>
+              <th style={{ 
+                padding: '16px 24px',
+                textAlign: 'left',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                color: 'var(--stone-700)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                fontFamily: 'Jost, sans-serif'
+              }}>
+                Category
+              </th>
+              <th style={{ 
+                padding: '16px 24px',
+                textAlign: 'right',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                color: 'var(--stone-700)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                fontFamily: 'Jost, sans-serif'
+              }}>
+                Price
+              </th>
+              <th style={{ 
+                padding: '16px 24px',
+                textAlign: 'center',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                color: 'var(--stone-700)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                fontFamily: 'Jost, sans-serif'
+              }}>
+                Stock
+              </th>
+              <th style={{ 
+                padding: '16px 24px',
+                textAlign: 'right',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                color: 'var(--stone-700)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                fontFamily: 'Jost, sans-serif'
+              }}>
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredProducts.map((product) => (
+              <tr 
+                key={product._id}
+                style={{ borderBottom: '1px solid var(--stone-100)' }}
+              >
+                <td style={{ padding: '20px 24px' }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <img 
+                      src={product.images?.[0] || 'https://via.placeholder.com/60'}
+                      alt={product.name}
+                      style={{ 
+                        width: 60,
+                        height: 60,
+                        objectFit: 'contain',
+                        background: 'var(--stone-50)',
+                        padding: 4,
+                        flexShrink: 0
+                      }}
                     />
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ 
+                        fontSize: '0.9rem',
+                        fontWeight: 500,
+                        color: 'var(--charcoal)',
+                        fontFamily: 'Jost, sans-serif',
+                        marginBottom: 4,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {product.name}
+                      </p>
+                      <p style={{ 
+                        fontSize: '0.75rem',
+                        color: 'var(--stone-500)',
+                        fontFamily: 'Jost, sans-serif'
+                      }}>
+                        {product.subcategory}
+                      </p>
+                    </div>
                   </div>
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description *</label>
-                    <textarea
-                      value={form.description}
-                      onChange={(e) => setForm({ ...form, description: e.target.value })}
-                      rows="3"
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400 resize-none"
-                      placeholder="Describe the product..."
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-                    <select
-                      value={form.category}
-                      onChange={(e) => setForm({ ...form, category: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                </td>
+                <td style={{ 
+                  padding: '20px 24px',
+                  fontSize: '0.85rem',
+                  color: 'var(--stone-600)',
+                  fontFamily: 'Jost, sans-serif'
+                }}>
+                  {product.category}
+                </td>
+                <td style={{ 
+                  padding: '20px 24px',
+                  textAlign: 'right',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  color: 'var(--charcoal)',
+                  fontFamily: 'Jost, sans-serif'
+                }}>
+                  R {product.price.toLocaleString()}
+                </td>
+                <td style={{ 
+                  padding: '20px 24px',
+                  textAlign: 'center'
+                }}>
+                  <span style={{
+                    padding: '4px 12px',
+                    borderRadius: 12,
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                    fontFamily: 'Jost, sans-serif',
+                    background: product.inStock ? '#e8f5e9' : '#fdf0f0',
+                    color: product.inStock ? '#2e7d32' : '#8a2020'
+                  }}>
+                    {product.inStock ? 'In Stock' : 'Out of Stock'}
+                  </span>
+                </td>
+                <td style={{ 
+                  padding: '20px 24px',
+                  textAlign: 'right'
+                }}>
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => alert('Edit feature coming soon')}
+                      style={{
+                        padding: '8px 12px',
+                        background: 'var(--stone-100)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        borderRadius: 2,
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = 'var(--stone-200)'}
+                      onMouseLeave={(e) => e.target.style.background = 'var(--stone-100)'}
                     >
-                      <option value="">Select category</option>
-                      {categories.map(cat => (
-                        <option key={cat._id} value={cat.name}>{cat.name}</option>
-                      ))}
-                    </select>
+                      <Edit2 size={16} color="var(--charcoal)" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(product._id)}
+                      style={{
+                        padding: '8px 12px',
+                        background: '#fdf0f0',
+                        border: 'none',
+                        cursor: 'pointer',
+                        borderRadius: 2,
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.target.style.background = '#fcc'}
+                      onMouseLeave={(e) => e.target.style.background = '#fdf0f0'}
+                    >
+                      <Trash2 size={16} color="#d32f2f" />
+                    </button>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Subcategory</label>
-                    <input
-                      type="text"
-                      value={form.subcategory}
-                      onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      placeholder="e.g. Sofas"
-                    />
-                  </div>
-                </div>
-              </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-              {/* Pricing */}
-              <div>
-                <h3 className="font-bold text-gray-700 mb-4">Pricing</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (R) *</label>
-                    <input
-                      type="number"
-                      value={form.price}
-                      onChange={(e) => setForm({ ...form, price: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      placeholder="4999"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Cost Price (R) *</label>
-                    <input
-                      type="number"
-                      value={form.costPrice}
-                      onChange={(e) => setForm({ ...form, costPrice: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      placeholder="2500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Discount (%)</label>
-                    <input
-                      type="number"
-                      value={form.discount}
-                      onChange={(e) => setForm({ ...form, discount: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      placeholder="0"
-                      min="0"
-                      max="100"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Dimensions */}
-              <div>
-                <h3 className="font-bold text-gray-700 mb-4">Dimensions (cm)</h3>
-                <div className="grid grid-cols-4 gap-4">
-                  {['length', 'width', 'height', 'weight'].map(dim => (
-                    <div key={dim}>
-                      <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">
-                        {dim} {dim === 'weight' ? '(kg)' : '(cm)'}
-                      </label>
-                      <input
-                        type="number"
-                        value={form.specifications.dimensions[dim]}
-                        onChange={(e) => setForm({
-                          ...form,
-                          specifications: {
-                            ...form.specifications,
-                            dimensions: {
-                              ...form.specifications.dimensions,
-                              [dim]: e.target.value
-                            }
-                          }
-                        })}
-                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                        placeholder="0"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Materials */}
-              <div>
-                <h3 className="font-bold text-gray-700 mb-4">Materials</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  {[
-                    { key: 'primary', label: 'Primary Material' },
-                    { key: 'frame', label: 'Frame Material' },
-                    { key: 'filling', label: 'Filling' }
-                  ].map(mat => (
-                    <div key={mat.key}>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">{mat.label}</label>
-                      <input
-                        type="text"
-                        value={form.specifications.material[mat.key]}
-                        onChange={(e) => setForm({
-                          ...form,
-                          specifications: {
-                            ...form.specifications,
-                            material: {
-                              ...form.specifications.material,
-                              [mat.key]: e.target.value
-                            }
-                          }
-                        })}
-                        className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                        placeholder={`e.g. ${mat.key === 'primary' ? 'Linen Fabric' : mat.key === 'frame' ? 'Solid Pine' : 'Foam'}`}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Other Specs */}
-              <div>
-                <h3 className="font-bold text-gray-700 mb-4">Other Details</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Colors (comma separated)
-                    </label>
-                    <input
-                      type="text"
-                      value={form.specifications.colors}
-                      onChange={(e) => setForm({
-                        ...form,
-                        specifications: { ...form.specifications, colors: e.target.value }
-                      })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      placeholder="Grey, Beige, Navy Blue"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Style (comma separated)
-                    </label>
-                    <input
-                      type="text"
-                      value={form.specifications.style}
-                      onChange={(e) => setForm({
-                        ...form,
-                        specifications: { ...form.specifications, style: e.target.value }
-                      })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      placeholder="Modern, Minimalist"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Assembly Time</label>
-                    <input
-                      type="text"
-                      value={form.specifications.assemblyTime}
-                      onChange={(e) => setForm({
-                        ...form,
-                        specifications: { ...form.specifications, assemblyTime: e.target.value }
-                      })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      placeholder="45 minutes"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Seating Capacity</label>
-                    <input
-                      type="number"
-                      value={form.specifications.seatingCapacity}
-                      onChange={(e) => setForm({
-                        ...form,
-                        specifications: { ...form.specifications, seatingCapacity: e.target.value }
-                      })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      placeholder="3"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Tags (comma separated)
-                    </label>
-                    <input
-                      type="text"
-                      value={form.tags}
-                      onChange={(e) => setForm({ ...form, tags: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      placeholder="compact, modern, grey, small-space"
-                    />
-                  </div>
-                  <div className="col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Image URLs (comma separated)
-                    </label>
-                    <input
-                      type="text"
-                      value={form.images}
-                      onChange={(e) => setForm({ ...form, images: e.target.value })}
-                      className="w-full border border-gray-200 rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-400"
-                      placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
-                    />
-                  </div>
-                  <div>
-                    <label className="flex items-center gap-2 cursor-pointer mt-2">
-                      <input
-                        type="checkbox"
-                        checked={form.specifications.spaceEfficient}
-                        onChange={(e) => setForm({
-                          ...form,
-                          specifications: { ...form.specifications, spaceEfficient: e.target.checked }
-                        })}
-                        className="w-4 h-4 text-amber-600"
-                      />
-                      <span className="text-sm font-medium text-gray-700">Space Efficient</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 p-6 border-t">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-6 py-2.5 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-6 py-2.5 bg-amber-600 text-white rounded-xl font-semibold hover:bg-amber-700 transition disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : editingProduct ? 'Save Changes' : 'Add Product'}
-              </button>
-            </div>
+        {filteredProducts.length === 0 && (
+          <div style={{ padding: '60px 20px', textAlign: 'center' }}>
+            <p style={{ 
+              color: 'var(--stone-500)',
+              fontFamily: 'Jost, sans-serif',
+              fontSize: '0.9rem'
+            }}>
+              No products found
+            </p>
           </div>
-        </div>
-      )}
-
-      {/* Delete Confirm Modal */}
-      {deleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4">
-            <h3 className="text-lg font-bold text-gray-800 mb-2">Delete Product?</h3>
-            <p className="text-gray-500 mb-6">This action cannot be undone.</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteConfirm(null)}
-                className="flex-1 border border-gray-200 py-2.5 rounded-xl text-gray-600 hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleDelete(deleteConfirm)}
-                className="flex-1 bg-red-500 text-white py-2.5 rounded-xl font-semibold hover:bg-red-600"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

@@ -1,224 +1,379 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  ShoppingBag, Users, Package,
-  TrendingUp, ArrowRight, DollarSign
-} from 'lucide-react';
-import { adminAPI, productsAPI } from '../../utils/api';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import { TrendingUp, Users, ShoppingBag, DollarSign, ArrowRight } from 'lucide-react';
+import { adminAPI } from '../../utils/api';
 
 const AdminDashboard = () => {
-  const [financials, setFinancials] = useState(null);
-  const [productReport, setProductReport] = useState(null);
-  const [customerReport, setCustomerReport] = useState(null);
+  const [stats, setStats] = useState({
+    revenue: 0,
+    orders: 0,
+    customers: 0,
+    avgOrderValue: 0,
+    profit: 0,
+    margin: 0
+  });
   const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [finRes, prodRes, custRes, ordersRes] = await Promise.all([
-          adminAPI.getFinancialReport(),
-          adminAPI.getProductReport(),
-          adminAPI.getCustomerReport(),
-          adminAPI.getOrders()
-        ]);
-        setFinancials(finRes.data);
-        setProductReport(prodRes.data);
-        setCustomerReport(custRes.data);
-        setRecentOrders(ordersRes.data.slice(0, 5));
-      } catch (error) {
-        console.error('Dashboard error:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
 
-  if (loading) return <LoadingSpinner text="Loading dashboard..." />;
+  const fetchData = async () => {
+    try {
+      const [financialRes, ordersRes, customersRes] = await Promise.all([
+        adminAPI.getFinancialReport(),
+        adminAPI.getOrders({ limit: 5 }),
+        adminAPI.getCustomers()
+      ]);
 
-  const stats = [
+      const financial = financialRes.data;
+      
+      setStats({
+        revenue: financial.totalRevenue || 0,
+        orders: financial.totalOrders || 0,
+        customers: customersRes.data.length || 0,
+        avgOrderValue: financial.avgOrderValue || 0,
+        profit: financial.totalProfit || 0,
+        margin: financial.profitMargin || 0
+      });
+
+      setRecentOrders(ordersRes.data.orders || []);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const statCards = [
     {
-      label: 'Total Revenue',
-      value: `R ${financials?.summary?.totalRevenue?.toLocaleString() || 0}`,
       icon: DollarSign,
-      color: 'bg-green-500',
-      sub: `${financials?.summary?.totalOrders || 0} orders`
+      label: 'Total Revenue',
+      value: `R ${stats.revenue.toLocaleString()}`,
+      color: '#C9A96E'
     },
     {
-      label: 'Total Profit',
-      value: `R ${financials?.summary?.totalProfit?.toLocaleString() || 0}`,
       icon: TrendingUp,
-      color: 'bg-amber-500',
-      sub: `${financials?.summary?.profitMargin || 0}% margin`
+      label: 'Total Profit',
+      value: `R ${stats.profit.toLocaleString()}`,
+      subtitle: `${stats.margin}% margin`,
+      color: '#4caf50'
     },
     {
-      label: 'Total Customers',
-      value: customerReport?.summary?.totalCustomers || 0,
       icon: Users,
-      color: 'bg-blue-500',
-      sub: `${customerReport?.summary?.totalOrdersPlaced || 0} orders placed`
+      label: 'Total Customers',
+      value: stats.customers,
+      subtitle: `${stats.orders} orders placed`,
+      color: '#2196f3'
     },
     {
-      label: 'Avg Order Value',
-      value: `R ${Math.round(financials?.summary?.averageOrderValue || 0).toLocaleString()}`,
       icon: ShoppingBag,
-      color: 'bg-purple-500',
-      sub: 'per order'
-    },
+      label: 'Avg Order Value',
+      value: `R ${stats.avgOrderValue.toLocaleString()}`,
+      subtitle: 'per order',
+      color: '#ff9800'
+    }
   ];
 
+  if (loading) {
+    return (
+      <div style={{ padding: 'clamp(32px, 5vw, 48px)' }}>
+        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+          <p style={{ color: 'var(--stone-600)', fontFamily: 'Jost, sans-serif' }}>
+            Loading dashboard...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div>
+    <div style={{ padding: 'clamp(24px, 4vw, 48px)', maxWidth: 1400, margin: '0 auto' }}>
+      
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Dashboard</h1>
-        <p className="text-gray-500 mt-1">Welcome back! Here's what's happening.</p>
+      <div style={{ marginBottom: 40 }}>
+        <h1 className="font-display" style={{ 
+          fontSize: 'clamp(1.8rem, 4vw, 2.5rem)', 
+          fontWeight: 400, 
+          color: 'var(--charcoal)',
+          marginBottom: 8
+        }}>
+          Dashboard
+        </h1>
+        <p style={{ 
+          fontSize: 'clamp(0.85rem, 2vw, 0.9rem)', 
+          color: 'var(--stone-600)',
+          fontFamily: 'Jost, sans-serif'
+        }}>
+          Overview of your store performance
+        </p>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, i) => {
+      {/* Stats Grid */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(clamp(200px, 40vw, 280px), 1fr))',
+        gap: 'clamp(16px, 3vw, 24px)',
+        marginBottom: 48
+      }}>
+        {statCards.map((stat, idx) => {
           const Icon = stat.icon;
           return (
-            <div key={i} className="bg-white rounded-2xl p-6 shadow-md">
-              <div className="flex items-center justify-between mb-4">
-                <div className={`${stat.color} p-3 rounded-xl`}>
-                  <Icon size={24} className="text-white" />
+            <div
+              key={idx}
+              style={{
+                background: 'white',
+                padding: 'clamp(20px, 4vw, 32px)',
+                borderRadius: 2,
+                border: '1px solid var(--stone-200)',
+                transition: 'all 0.2s'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-4px)';
+                e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.08)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+            >
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'flex-start', 
+                justifyContent: 'space-between',
+                marginBottom: 16
+              }}>
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: '50%',
+                  background: `${stat.color}15`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Icon size={24} style={{ color: stat.color }} />
                 </div>
               </div>
-              <p className="text-2xl font-bold text-gray-800">{stat.value}</p>
-              <p className="text-gray-500 text-sm mt-1">{stat.label}</p>
-              <p className="text-xs text-gray-400 mt-1">{stat.sub}</p>
+
+              <p style={{ 
+                fontSize: 'clamp(0.7rem, 1.8vw, 0.75rem)', 
+                color: 'var(--stone-500)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+                marginBottom: 8,
+                fontFamily: 'Jost, sans-serif',
+                fontWeight: 500
+              }}>
+                {stat.label}
+              </p>
+
+              <p className="font-display" style={{ 
+                fontSize: 'clamp(1.5rem, 4vw, 2rem)', 
+                fontWeight: 600,
+                color: 'var(--charcoal)',
+                marginBottom: 4
+              }}>
+                {stat.value}
+              </p>
+
+              {stat.subtitle && (
+                <p style={{ 
+                  fontSize: 'clamp(0.75rem, 2vw, 0.85rem)', 
+                  color: 'var(--stone-600)',
+                  fontFamily: 'Jost, sans-serif'
+                }}>
+                  {stat.subtitle}
+                </p>
+              )}
             </div>
           );
         })}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6 mb-6">
-
-        {/* Best Selling Products */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-gray-800">Best Selling Products</h2>
-            <Link to="/admin/reports" className="text-amber-600 text-sm flex items-center gap-1">
-              View Report <ArrowRight size={14} />
-            </Link>
-          </div>
-          <div className="space-y-4">
-            {productReport?.bestSelling?.slice(0, 5).map((product, i) => (
-              <div key={product._id} className="flex items-center gap-4">
-                <span className="text-lg font-bold text-gray-300 w-6">#{i + 1}</span>
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-800 text-sm">{product.name}</p>
-                  <p className="text-xs text-gray-500">{product.category}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-amber-600">{product.salesCount} sold</p>
-                  <p className="text-xs text-gray-400">R {product.price?.toLocaleString()}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Top Customers */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-gray-800">Top Customers</h2>
-            <Link to="/admin/reports" className="text-amber-600 text-sm flex items-center gap-1">
-              View Report <ArrowRight size={14} />
-            </Link>
-          </div>
-          <div className="space-y-4">
-            {customerReport?.topCustomers?.slice(0, 5).map((customer, i) => (
-              <div key={customer.userId} className="flex items-center gap-4">
-                <span className="text-lg font-bold text-gray-300 w-6">#{i + 1}</span>
-                <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center shrink-0">
-                  <span className="text-amber-600 font-bold text-sm">
-                    {customer.name?.[0] || customer.email?.[0] || '?'}
-                  </span>
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-800 text-sm">
-                    {customer.name || 'Unknown'}
-                  </p>
-                  <p className="text-xs text-gray-500">{customer.email}</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-amber-600">
-                    R {customer.totalSpent?.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-gray-400">{customer.orderCount} orders</p>
-                </div>
-              </div>
-            ))}
-            {(!customerReport?.topCustomers || customerReport.topCustomers.length === 0) && (
-              <p className="text-gray-400 text-sm text-center py-4">No customer data yet</p>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Recent Orders */}
-      <div className="bg-white rounded-2xl shadow-md p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-bold text-gray-800">Recent Orders</h2>
-          <Link to="/admin/orders" className="text-amber-600 text-sm flex items-center gap-1">
-            View All <ArrowRight size={14} />
+      <div style={{ background: 'white', border: '1px solid var(--stone-200)', borderRadius: 2 }}>
+        <div style={{ 
+          padding: 'clamp(20px, 4vw, 32px)',
+          borderBottom: '1px solid var(--stone-200)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: 16
+        }}>
+          <h2 className="font-display" style={{ 
+            fontSize: 'clamp(1.3rem, 3vw, 1.8rem)', 
+            fontWeight: 400,
+            color: 'var(--charcoal)'
+          }}>
+            Recent Orders
+          </h2>
+          <Link 
+            to="/admin/orders"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              color: 'var(--accent)',
+              textDecoration: 'none',
+              fontSize: 'clamp(0.8rem, 2vw, 0.85rem)',
+              fontFamily: 'Jost, sans-serif',
+              fontWeight: 500,
+              letterSpacing: '0.02em'
+            }}
+          >
+            View All
+            <ArrowRight size={16} />
           </Link>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-gray-100">
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase pb-3">Order ID</th>
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase pb-3">Customer</th>
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase pb-3">Date</th>
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase pb-3">Payment</th>
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase pb-3">Total</th>
-                <th className="text-left text-xs font-semibold text-gray-500 uppercase pb-3">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentOrders.map(order => (
-                <tr key={order._id} className="border-b border-gray-50 hover:bg-gray-50">
-                  <td className="py-3 font-mono text-sm text-gray-600">
-                    #{order._id.slice(-6).toUpperCase()}
-                  </td>
-                  <td className="py-3 text-sm text-gray-800">
-                    {order.userId?.profile?.name || order.userId?.email || 'Unknown'}
-                  </td>
-                  <td className="py-3 text-sm text-gray-500">
-                    {new Date(order.createdAt).toLocaleDateString('en-ZA')}
-                  </td>
-                  <td className="py-3 text-sm capitalize text-gray-600">
-                    {order.paymentMethod}
-                  </td>
-                  <td className="py-3 font-bold text-amber-600">
-                    R {order.total?.toLocaleString()}
-                  </td>
-                  <td className="py-3">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      order.status === 'complete'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {order.status}
-                    </span>
-                  </td>
+
+        <div style={{ overflowX: 'auto' }}>
+          {recentOrders.length === 0 ? (
+            <div style={{ padding: 'clamp(40px, 8vw, 60px)', textAlign: 'center' }}>
+              <p style={{ 
+                color: 'var(--stone-500)', 
+                fontFamily: 'Jost, sans-serif',
+                fontSize: 'clamp(0.85rem, 2vw, 0.9rem)'
+              }}>
+                No orders yet
+              </p>
+            </div>
+          ) : (
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: 'var(--stone-50)' }}>
+                  <th style={{ 
+                    padding: 'clamp(12px, 2vw, 16px) clamp(16px, 3vw, 32px)',
+                    textAlign: 'left',
+                    fontSize: 'clamp(0.7rem, 1.8vw, 0.75rem)',
+                    fontWeight: 600,
+                    color: 'var(--stone-700)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    fontFamily: 'Jost, sans-serif',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    Order ID
+                  </th>
+                  <th style={{ 
+                    padding: 'clamp(12px, 2vw, 16px) clamp(16px, 3vw, 32px)',
+                    textAlign: 'left',
+                    fontSize: 'clamp(0.7rem, 1.8vw, 0.75rem)',
+                    fontWeight: 600,
+                    color: 'var(--stone-700)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    fontFamily: 'Jost, sans-serif',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    Customer
+                  </th>
+                  <th style={{ 
+                    padding: 'clamp(12px, 2vw, 16px) clamp(16px, 3vw, 32px)',
+                    textAlign: 'left',
+                    fontSize: 'clamp(0.7rem, 1.8vw, 0.75rem)',
+                    fontWeight: 600,
+                    color: 'var(--stone-700)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    fontFamily: 'Jost, sans-serif',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    Date
+                  </th>
+                  <th style={{ 
+                    padding: 'clamp(12px, 2vw, 16px) clamp(16px, 3vw, 32px)',
+                    textAlign: 'left',
+                    fontSize: 'clamp(0.7rem, 1.8vw, 0.75rem)',
+                    fontWeight: 600,
+                    color: 'var(--stone-700)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    fontFamily: 'Jost, sans-serif',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    Total
+                  </th>
+                  <th style={{ 
+                    padding: 'clamp(12px, 2vw, 16px) clamp(16px, 3vw, 32px)',
+                    textAlign: 'left',
+                    fontSize: 'clamp(0.7rem, 1.8vw, 0.75rem)',
+                    fontWeight: 600,
+                    color: 'var(--stone-700)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    fontFamily: 'Jost, sans-serif',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    Status
+                  </th>
                 </tr>
-              ))}
-              {recentOrders.length === 0 && (
-                <tr>
-                  <td colSpan="6" className="py-8 text-center text-gray-400">
-                    No orders yet
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {recentOrders.map((order) => (
+                  <tr 
+                    key={order._id}
+                    style={{ borderBottom: '1px solid var(--stone-100)' }}
+                  >
+                    <td style={{ 
+                      padding: 'clamp(14px, 2.5vw, 20px) clamp(16px, 3vw, 32px)',
+                      fontSize: 'clamp(0.8rem, 2vw, 0.85rem)',
+                      color: 'var(--charcoal)',
+                      fontFamily: 'monospace'
+                    }}>
+                      #{order._id.slice(-6).toUpperCase()}
+                    </td>
+                    <td style={{ 
+                      padding: 'clamp(14px, 2.5vw, 20px) clamp(16px, 3vw, 32px)',
+                      fontSize: 'clamp(0.8rem, 2vw, 0.85rem)',
+                      color: 'var(--charcoal)',
+                      fontFamily: 'Jost, sans-serif'
+                    }}>
+                      {order.userId?.email || order.userId?.name || 'N/A'}
+                    </td>
+                    <td style={{ 
+                      padding: 'clamp(14px, 2.5vw, 20px) clamp(16px, 3vw, 32px)',
+                      fontSize: 'clamp(0.8rem, 2vw, 0.85rem)',
+                      color: 'var(--stone-600)',
+                      fontFamily: 'Jost, sans-serif',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {new Date(order.createdAt).toLocaleDateString()}
+                    </td>
+                    <td style={{ 
+                      padding: 'clamp(14px, 2.5vw, 20px) clamp(16px, 3vw, 32px)',
+                      fontSize: 'clamp(0.85rem, 2vw, 0.9rem)',
+                      fontWeight: 600,
+                      color: 'var(--accent)',
+                      fontFamily: 'Jost, sans-serif',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      R {(order.total || order.totalAmount || 0).toLocaleString()}
+                    </td>
+                    <td style={{ 
+                      padding: 'clamp(14px, 2.5vw, 20px) clamp(16px, 3vw, 32px)'
+                    }}>
+                      <span style={{
+                        padding: '4px 12px',
+                        borderRadius: 12,
+                        fontSize: 'clamp(0.7rem, 1.8vw, 0.75rem)',
+                        fontWeight: 500,
+                        fontFamily: 'Jost, sans-serif',
+                        textTransform: 'capitalize',
+                        background: order.status === 'complete' ? '#e8f5e9' : 'var(--stone-100)',
+                        color: order.status === 'complete' ? '#2e7d32' : 'var(--stone-600)',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {order.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </div>
     </div>
