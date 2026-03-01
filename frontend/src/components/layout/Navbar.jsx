@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { ShoppingCart, User, Menu, X, Home } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 
@@ -9,6 +9,7 @@ const Navbar = () => {
   const { cart } = useCart();
   const { isLoggedIn, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -28,6 +29,18 @@ const Navbar = () => {
     }
     return location.pathname === path;
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (showUserMenu && !e.target.closest('.user-menu-container')) {
+        setShowUserMenu(false);
+      }
+    };
+    
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showUserMenu]);
 
   return (
     <nav style={{ 
@@ -138,11 +151,97 @@ const Navbar = () => {
             )}
           </Link>
 
-          {/* User */}
+          {/* User Menu */}
           {isLoggedIn ? (
-            <Link to="/profile" style={{ color: 'var(--charcoal)', textDecoration: 'none' }}>
-              <User size={20} />
-            </Link>
+            <div className="user-menu-container" style={{ position: 'relative' }}>
+              <button 
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                style={{ 
+                  color: 'var(--charcoal)', 
+                  background: 'none', 
+                  border: 'none', 
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                <User size={20} />
+              </button>
+              
+              {showUserMenu && (
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  right: 0,
+                  marginTop: 12,
+                  background: 'white',
+                  border: '1px solid var(--stone-200)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  minWidth: 180,
+                  zIndex: 1000
+                }}>
+                  <Link 
+                    to="/profile" 
+                    onClick={() => setShowUserMenu(false)}
+                    style={{ 
+                      display: 'block',
+                      padding: '12px 16px', 
+                      textDecoration: 'none', 
+                      color: 'var(--charcoal)',
+                      fontSize: '0.85rem',
+                      fontFamily: 'Jost, sans-serif',
+                      borderBottom: '1px solid var(--stone-100)',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = 'var(--stone-50)'}
+                    onMouseLeave={(e) => e.target.style.background = 'white'}
+                  >
+                    👤 My Profile
+                  </Link>
+                  <Link 
+                    to="/orders/my-orders" 
+                    onClick={() => setShowUserMenu(false)}
+                    style={{ 
+                      display: 'block',
+                      padding: '12px 16px', 
+                      textDecoration: 'none', 
+                      color: 'var(--charcoal)',
+                      fontSize: '0.85rem',
+                      fontFamily: 'Jost, sans-serif',
+                      borderBottom: '1px solid var(--stone-100)',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = 'var(--stone-50)'}
+                    onMouseLeave={(e) => e.target.style.background = 'white'}
+                  >
+                    📦 My Orders
+                  </Link>
+                  <button 
+                    onClick={() => {
+                      logout();
+                      setShowUserMenu(false);
+                    }}
+                    style={{ 
+                      width: '100%',
+                      padding: '12px 16px', 
+                      background: 'none',
+                      border: 'none',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                      color: '#d32f2f',
+                      fontSize: '0.85rem',
+                      fontFamily: 'Jost, sans-serif',
+                      transition: 'background 0.2s'
+                    }}
+                    onMouseEnter={(e) => e.target.style.background = '#fef0f0'}
+                    onMouseLeave={(e) => e.target.style.background = 'white'}
+                  >
+                    🚪 Logout
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <Link to="/login" style={{ color: 'var(--charcoal)', textDecoration: 'none' }}>
               <User size={20} />
@@ -216,6 +315,63 @@ const Navbar = () => {
                 {cat.name}
               </Link>
             ))}
+            
+            {isLoggedIn && (
+              <>
+                <Link 
+                  to="/profile"
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    textDecoration: 'none',
+                    color: 'var(--stone-600)',
+                    fontSize: '0.9rem',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    fontFamily: 'Jost, sans-serif',
+                    padding: '8px 0',
+                    borderBottom: '1px solid var(--stone-100)'
+                  }}
+                >
+                  👤 My Profile
+                </Link>
+                <Link 
+                  to="/orders/my-orders"
+                  onClick={() => setMobileMenuOpen(false)}
+                  style={{
+                    textDecoration: 'none',
+                    color: 'var(--stone-600)',
+                    fontSize: '0.9rem',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    fontFamily: 'Jost, sans-serif',
+                    padding: '8px 0',
+                    borderBottom: '1px solid var(--stone-100)'
+                  }}
+                >
+                  📦 My Orders
+                </Link>
+                <button
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    textAlign: 'left',
+                    color: '#d32f2f',
+                    fontSize: '0.9rem',
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    fontFamily: 'Jost, sans-serif',
+                    padding: '8px 0',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🚪 Logout
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
