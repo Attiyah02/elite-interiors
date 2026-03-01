@@ -46,7 +46,7 @@ const createOrder = async (req, res) => {
       items: orderItems,
       total: total,
       paymentMethod: paymentMethod || 'card',
-      status: 'pending'
+      status: 'complete'
     });
 
     // Populate product details for email
