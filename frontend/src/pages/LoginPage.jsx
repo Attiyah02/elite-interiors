@@ -12,77 +12,50 @@ const LoginPage = () => {
   const { login } = useAuth();
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+  e.preventDefault();
+  setError('');
+  setLoading(true);
 
-    console.log('🔐 Starting login...');
-    console.log('📧 Email:', email);
-    console.log('🔑 Password length:', password.length);
-
-    try {
-      console.log('📤 Calling authAPI.login...');
-      const res = await authAPI.login({ email, password });
-      console.log('✅ API Response:', res.data);
-      
-      // Save to localStorage
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data));
-      console.log('💾 Saved to localStorage');
-      console.log('💾 Token:', localStorage.getItem('token'));
-      console.log('💾 User:', localStorage.getItem('user'));
-      
-      // Update auth context
-      console.log('🔄 Calling login context function...');
-      login(res.data.token, res.data);
-      console.log('🔄 Auth context updated');
-
-      // Set welcome message
-      sessionStorage.setItem('showWelcome', 'true');
-      sessionStorage.setItem('userName', res.data.profile?.name || res.data.email?.split('@')[0]);
-      console.log('👋 Welcome message set for:', res.data.profile?.name || res.data.email?.split('@')[0]);
-      
-      // Redirect based on role
-      const redirectPath = res.data.role === 'admin' ? '/admin' : '/';
-      console.log('➡️ User role:', res.data.role);
-      console.log('➡️ Redirecting to:', redirectPath);
-      
-      navigate(redirectPath);
-      console.log('✨ Navigation called');
-      
-    } catch (err) {
-      console.error('❌ Login error:', err);
-      console.error('❌ Error response:', err.response);
-      console.error('❌ Error request:', err.request);
-      console.error('❌ Error message:', err.message);
-      
-      // Handle different error types
-      if (err.response) {
-        // Server responded with error
-        const status = err.response.status;
-        const message = err.response.data?.message;
-
-        if (status === 401) {
-          setError('Invalid email or password. Please try again.');
-        } else if (status === 404) {
-          setError('Account not found. Please check your email or register.');
-        } else if (status === 500) {
-          setError('Server error. Please try again later.');
-        } else {
-          setError(message || 'Login failed. Please try again.');
-        }
-      } else if (err.request) {
-        // Request made but no response
-        setError('Cannot connect to server. Please check your internet connection.');
-      } else {
-        // Something else happened
-        setError('An unexpected error occurred. Please try again.');
-      }
-    } finally {
-      setLoading(false);
-      console.log('🏁 Login attempt finished');
+  try {
+    // Use the AuthContext login - it handles everything
+    const userData = await login(email, password);
+    
+    // Set welcome message
+    sessionStorage.setItem('showWelcome', 'true');
+    sessionStorage.setItem('userName', userData.profile?.name || userData.email?.split('@')[0]);
+    
+    // Redirect based on role
+    if (userData.role === 'admin') {
+      navigate('/admin');
+    } else {
+      navigate('/');
     }
-  };
+    
+  } catch (err) {
+    console.error('❌ Login error:', err);
+    
+    if (err.response) {
+      const status = err.response.status;
+      const message = err.response.data?.message;
+
+      if (status === 401) {
+        setError('Invalid email or password. Please try again.');
+      } else if (status === 404) {
+        setError('Account not found. Please check your email or register.');
+      } else if (status === 500) {
+        setError('Server error. Please try again later.');
+      } else {
+        setError(message || 'Login failed. Please try again.');
+      }
+    } else if (err.request) {
+      setError('Cannot connect to server. Please check your internet connection.');
+    } else {
+      setError('An unexpected error occurred. Please try again.');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div style={{ 
@@ -163,7 +136,7 @@ const LoginPage = () => {
               value={email} 
               onChange={(e) => {
                 setEmail(e.target.value);
-                setError('');
+                setError(''); // Clear error when user starts typing
               }}
               required 
               className="field-input" 
@@ -180,7 +153,7 @@ const LoginPage = () => {
               value={password} 
               onChange={(e) => {
                 setPassword(e.target.value);
-                setError('');
+                setError(''); // Clear error when user starts typing
               }}
               required 
               className="field-input" 
@@ -189,6 +162,7 @@ const LoginPage = () => {
               autoComplete="current-password"
             />
             
+            {/* Forgot Password Link */}
             <Link 
               to="/forgot-password" 
               style={{ 
