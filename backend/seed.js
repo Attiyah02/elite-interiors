@@ -718,7 +718,7 @@ const products = [
       spaceEfficient: true,
       style: ["Modern", "Functional"]
     },
-    images: ["https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800"],
+    images: ["https://images.unsplash.com/photo-1763694333990-aa6860e6da63?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"],
     tags: ["shoe-cabinet", "storage", "seat", "entryway", "white", "slim"],
     roomType: "Storage"
   },
@@ -738,7 +738,7 @@ const products = [
       spaceEfficient: true,
       style: ["Natural", "Minimalist"]
     },
-    images: ["https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800"],
+    images: ["https://images.unsplash.com/photo-1595515106864-077d30192c56?q=80&w=687&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"],
     tags: ["storage-tower", "vertical", "bamboo", "bathroom", "narrow", "shelves"],
     roomType: "Storage"
   }
