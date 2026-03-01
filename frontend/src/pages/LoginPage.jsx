@@ -16,29 +16,45 @@ const LoginPage = () => {
     setError('');
     setLoading(true);
 
+    console.log('🔐 Starting login...');
+    console.log('📧 Email:', email);
+    console.log('🔑 Password length:', password.length);
+
     try {
+      console.log('📤 Calling authAPI.login...');
       const res = await authAPI.login({ email, password });
+      console.log('✅ API Response:', res.data);
       
       // Save to localStorage
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data));
+      console.log('💾 Saved to localStorage');
+      console.log('💾 Token:', localStorage.getItem('token'));
+      console.log('💾 User:', localStorage.getItem('user'));
       
       // Update auth context
+      console.log('🔄 Calling login context function...');
       login(res.data.token, res.data);
+      console.log('🔄 Auth context updated');
 
       // Set welcome message
       sessionStorage.setItem('showWelcome', 'true');
       sessionStorage.setItem('userName', res.data.profile?.name || res.data.email?.split('@')[0]);
+      console.log('👋 Welcome message set for:', res.data.profile?.name || res.data.email?.split('@')[0]);
       
       // Redirect based on role
-      if (res.data.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
+      const redirectPath = res.data.role === 'admin' ? '/admin' : '/';
+      console.log('➡️ User role:', res.data.role);
+      console.log('➡️ Redirecting to:', redirectPath);
+      
+      navigate(redirectPath);
+      console.log('✨ Navigation called');
       
     } catch (err) {
-      console.error('Login error:', err);
+      console.error('❌ Login error:', err);
+      console.error('❌ Error response:', err.response);
+      console.error('❌ Error request:', err.request);
+      console.error('❌ Error message:', err.message);
       
       // Handle different error types
       if (err.response) {
@@ -64,6 +80,7 @@ const LoginPage = () => {
       }
     } finally {
       setLoading(false);
+      console.log('🏁 Login attempt finished');
     }
   };
 
@@ -146,7 +163,7 @@ const LoginPage = () => {
               value={email} 
               onChange={(e) => {
                 setEmail(e.target.value);
-                setError(''); // Clear error when user starts typing
+                setError('');
               }}
               required 
               className="field-input" 
@@ -163,7 +180,7 @@ const LoginPage = () => {
               value={password} 
               onChange={(e) => {
                 setPassword(e.target.value);
-                setError(''); // Clear error when user starts typing
+                setError('');
               }}
               required 
               className="field-input" 
@@ -172,7 +189,6 @@ const LoginPage = () => {
               autoComplete="current-password"
             />
             
-            {/* Forgot Password Link */}
             <Link 
               to="/forgot-password" 
               style={{ 
