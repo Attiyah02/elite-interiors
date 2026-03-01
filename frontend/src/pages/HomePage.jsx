@@ -72,48 +72,57 @@ const HomePage = () => {
   };
 
   const handleImageSearch = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const file = e.target.files[0];
+  if (!file) return;
 
-    setAiLoading(true);
+  setAiLoading(true);
 
-    try {
-      // Create form data
-      const formData = new FormData();
-      formData.append('image', file);
+  try {
+    const formData = new FormData();
+    formData.append('image', file);
 
-      // Call image search API
-      const response = await fetch('http://localhost:5000/api/image-search', {
-        method: 'POST',
-        body: formData
-      });
+    // Use production URL when deployed, localhost when local
+    const apiUrl = window.location.hostname === 'localhost' 
+      ? 'http://localhost:5000' 
+      : 'https://elite-interiors.onrender.com';
+    
+    console.log('📤 Calling:', `${apiUrl}/api/image-search`);
 
-      const data = await response.json();
+    const response = await fetch(`${apiUrl}/api/image-search`, {
+      method: 'POST',
+      body: formData
+    });
 
-      if (data.products && data.products.length > 0) {
-        // Navigate to products page with results
-        navigate('/products', {
-          state: {
-            aiResults: data.products,
-            aiPrompt: `Image search: ${data.detectedFurniture.join(', ')} in ${data.detectedColors.join(', ')}`,
-            searchCriteria: {
-              detectedLabels: data.detectedLabels,
-              detectedColors: data.detectedColors,
-              detectedFurniture: data.detectedFurniture
-            }
-          }
-        });
-      } else {
-        alert('No similar products found. Try a different image!');
-      }
-
-    } catch (error) {
-      console.error('Image search error:', error);
-      alert('Image search failed. Please try again.');
-    } finally {
-      setAiLoading(false);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  };
+
+    const data = await response.json();
+    console.log('📥 Response:', data);
+
+    if (data.products && data.products.length > 0) {
+      navigate('/products', {
+        state: {
+          aiResults: data.products,
+          aiPrompt: `Image search: ${data.detectedFurniture?.join(', ') || 'furniture'} in ${data.detectedColors?.join(', ') || 'various colors'}`,
+          searchCriteria: {
+            detectedLabels: data.detectedLabels || [],
+            detectedColors: data.detectedColors || [],
+            detectedFurniture: data.detectedFurniture || []
+          }
+        }
+      });
+    } else {
+      alert('No similar products found. Try a different image!');
+    }
+
+  } catch (error) {
+    console.error('Image search error:', error);
+    alert(`Image search failed: ${error.message}`);
+  } finally {
+    setAiLoading(false);
+  }
+};
 
   if (loading) return <LoadingSpinner text="Loading collection..." />;
 
