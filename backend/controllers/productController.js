@@ -400,11 +400,34 @@ const aiSearch = async (req, res) => {
       let score = 0;
       const productName = product.name.toLowerCase();
       const productDesc = product.description.toLowerCase();
+      const productTags = product.tags ? product.tags.join(' ').toLowerCase() : '';
+      const searchLower = prompt.toLowerCase();
 
       // Furniture type scoring
       analysis.furnitureTypes.forEach(type => {
-        if (productName.includes(type)) score += 20;
-        if (productDesc.includes(type)) score += 10;
+        if (productName.includes(type)) score += 50;
+        if (productDesc.includes(type)) score += 20;
+        if (productTags.includes(type)) score += 30;
+      });
+
+      // Size/bed type keywords (double, single, king, queen, twin)
+      const sizeKeywords = ['double', 'single', 'king', 'queen', 'twin', 'full'];
+      sizeKeywords.forEach(size => {
+        if (searchLower.includes(size)) {
+          if (productName.includes(size)) score += 40;
+          if (productDesc.includes(size)) score += 20;
+          if (productTags.includes(size)) score += 20;
+        }
+      });
+      
+      // Comfort/quality keywords
+      const qualityKeywords = ['comfortable', 'comfort', 'luxury', 'premium', 'soft', 'plush', 'cozy', 'ergonomic', 'supportive'];
+      qualityKeywords.forEach(keyword => {
+        if (searchLower.includes(keyword)) {
+          if (productDesc.includes(keyword)) score += 15;
+          if (productTags.includes(keyword)) score += 15;
+          if (productName.includes(keyword)) score += 25;
+        }
       });
 
       // Color scoring
@@ -413,7 +436,8 @@ const aiSearch = async (req, res) => {
           const hasColor = product.specifications.colors.some(c => 
             c.toLowerCase().includes(color)
           );
-          if (hasColor) score += 15;
+          if (hasColor) score += 30;
+          if (productName.includes(color)) score += 25;
         });
       }
 
@@ -423,14 +447,36 @@ const aiSearch = async (req, res) => {
           const hasStyle = product.specifications.style.some(s => 
             s.toLowerCase().includes(style)
           );
-          if (hasStyle) score += 10;
+          if (hasStyle) score += 25;
+          if (productName.includes(style)) score += 20;
         });
       }
 
       // Category bonus
       if (analysis.category && product.category === analysis.category) {
+        score += 20;
+      }
+
+      // Price match bonus (within budget)
+      if (analysis.maxPrice && product.price <= analysis.maxPrice) {
         score += 15;
       }
+
+      // Space efficient bonus
+      if (analysis.spaceEfficient && product.specifications?.spaceEfficient) {
+        score += 25;
+      }
+
+      // Material keywords (wood, metal, leather, fabric, velvet)
+      const materialKeywords = ['wood', 'wooden', 'metal', 'leather', 'fabric', 'velvet', 'linen', 'cotton', 'marble', 'glass'];
+      materialKeywords.forEach(material => {
+        if (searchLower.includes(material)) {
+          if (product.specifications?.material?.primary?.toLowerCase().includes(material)) {
+            score += 20;
+          }
+          if (productDesc.includes(material)) score += 10;
+        }
+      });
 
       return { ...product.toObject(), relevanceScore: score };
     });
