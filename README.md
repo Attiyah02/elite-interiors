@@ -3,7 +3,9 @@
 **Live Site:** https://elite-interiors-phi.vercel.app/
 
 ## 2.Database Access
-**MangoDB** invites to database have been sent via email to relevant users
+**MangoDB** invites to have been sent via email to relevant users
+
+FurnitureShop -> furnitureDB
 
 ## 3.Admin Credentials
 
